@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>AstraFlow | Predict Impact</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#5a5f64",
+                    "on-primary-container": "#7f9df8",
+                    "surface": "#f9f9fc",
+                    "on-error": "#ffffff",
+                    "surface-dim": "#dadadc",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#003087",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#dfe3e9",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#42474c",
+                    "inverse-primary": "#b4c5ff",
+                    "outline": "#747683",
+                    "surface-tint": "#3959b0",
+                    "tertiary": "#440f00",
+                    "on-tertiary-fixed": "#390b00",
+                    "on-primary-fixed": "#00174b",
+                    "inverse-on-surface": "#f0f0f3",
+                    "on-surface-variant": "#444652",
+                    "secondary-fixed-dim": "#c2c7cd",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed": "#171c20",
+                    "tertiary-fixed-dim": "#ffb59d",
+                    "surface-container-highest": "#e2e2e5",
+                    "inverse-surface": "#2f3133",
+                    "tertiary-container": "#691c00",
+                    "on-background": "#1a1c1e",
+                    "surface-bright": "#f9f9fc",
+                    "on-tertiary-fixed-variant": "#7e2b0d",
+                    "surface-container-high": "#e8e8ea",
+                    "on-tertiary-container": "#f1815c",
+                    "outline-variant": "#c4c6d4",
+                    "on-surface": "#1a1c1e",
+                    "background": "#f9f9fc",
+                    "error": "#ba1a1a",
+                    "on-secondary-container": "#5e6368",
+                    "surface-variant": "#e2e2e5",
+                    "primary": "#001d59",
+                    "on-secondary": "#ffffff",
+                    "surface-container": "#eeeef0",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-fixed-variant": "#1c4197",
+                    "secondary-container": "#dce0e6",
+                    "surface-container-low": "#f3f3f6",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#ffdbd0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "xl": "32px",
+                    "lg": "24px",
+                    "xs": "8px",
+                    "sm": "12px",
+                    "base": "4px",
+                    "container-margin": "16px",
+                    "gutter": "12px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Work Sans"],
+                    "label-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Work Sans"],
+                    "label-bold": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Work Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-bold": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+            scroll-behavior: smooth;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #DEE5EF;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen pb-24">
+<!-- TopAppBar Shell -->
+<header class="bg-surface dark:bg-inverse-surface flex justify-between items-center px-container-margin w-full h-14 docked full-width top-0 sticky z-50">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="local_gas_station">local_gas_station</span>
+<h1 class="text-headline-md font-headline-md-mobile font-bold text-primary dark:text-primary-fixed-dim">AstraFlow</h1>
+</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<main class="max-w-md mx-auto px-container-margin py-lg space-y-lg">
+<!-- Hero Section / Context -->
+<section class="space-y-xs">
+<h2 class="text-headline-lg-mobile font-headline-lg-mobile text-primary">Consumption Predictor</h2>
+<p class="text-body-md text-on-surface-variant">Estimate your costs and environmental impact based on upcoming price fluctuations.</p>
+</section>
+<!-- Main Input Card -->
+<section class="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm space-y-md">
+<div class="space-y-xs">
+<label class="text-label-bold font-label-bold text-on-surface-variant uppercase tracking-wider block" for="liters-input">Volume in Liters</label>
+<div class="relative group">
+<input class="w-full h-12 px-md pt-base bg-surface border border-outline-variant rounded-lg focus:outline-none focus:border-primary transition-all text-body-lg font-body-lg" id="liters-input" oninput="validateInput()" placeholder="e.g. 50" type="number"/>
+<div class="absolute right-md top-1/2 -translate-y-1/2 text-on-surface-variant font-label-bold">L</div>
+</div>
+</div>
+<button class="w-full h-12 bg-primary text-on-primary font-headline-md rounded-lg shadow-sm active:scale-95 transition-transform duration-150 flex justify-center items-center gap-xs" onclick="calculateImpact()">
+<span>Calculate Impact</span>
+<span class="material-symbols-outlined" data-icon="query_stats">query_stats</span>
+</button>
+</section>
+<!-- Results Area -->
+<div class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500" id="results-container">
+<!-- Clear Blue Result Box -->
+<section class="bg-primary-container text-on-primary-container rounded-xl p-lg space-y-md border border-primary/20">
+<div class="flex justify-between items-start">
+<div class="space-y-base">
+<p class="text-label-bold font-label-bold uppercase opacity-80">Estimated Cost</p>
+<h3 class="text-headline-lg font-headline-lg" id="result-price">$0.00</h3>
+</div>
+<div class="bg-white/10 p-sm rounded-lg backdrop-blur-sm">
+<span class="material-symbols-outlined text-on-primary-container" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+</div>
+<div class="h-px bg-white/10 w-full"></div>
+<div class="grid grid-cols-2 gap-md">
+<div>
+<p class="text-label-sm font-label-sm opacity-80">Carbon Footprint</p>
+<p class="text-body-lg font-semibold" id="result-carbon">0.0 kg CO₂</p>
+</div>
+<div>
+<p class="text-label-sm font-label-sm opacity-80">Price Index</p>
+<p class="text-body-lg font-semibold">Stable</p>
+</div>
+</div>
+</section>
+<!-- Price Increase Alert (Red Text Sparingly) -->
+<div class="mt-md p-md bg-error-container/30 border border-error/10 rounded-lg flex items-center gap-sm hidden" id="price-alert">
+<span class="material-symbols-outlined text-error" data-icon="trending_up">trending_up</span>
+<p class="text-body-md text-error font-semibold">
+                    Warning: Price expected to rise 4.2% next week. Potential <span id="alert-loss">+$0.00</span> impact.
+                </p>
+</div>
+</div>
+<!-- Explainer Bento-ish Layout -->
+<section class="grid grid-cols-2 gap-sm">
+<div class="col-span-2 bg-surface-container-low p-md rounded-xl space-y-xs">
+<div class="flex items-center gap-xs text-primary">
+<span class="material-symbols-outlined text-md" data-icon="info">info</span>
+<p class="text-label-bold font-label-bold">How we predict</p>
+</div>
+<p class="text-body-md text-on-surface-variant">Our algorithms analyze historical trends, real-time market data, and regional fluctuations to give you the most accurate impact forecast.</p>
+</div>
+<div class="bg-surface-container-low p-md rounded-xl space-y-xs">
+<span class="material-symbols-outlined text-secondary" data-icon="eco">eco</span>
+<p class="text-label-bold font-label-bold">Eco Score</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Track your monthly reduction goals.</p>
+</div>
+<div class="bg-surface-container-low p-md rounded-xl space-y-xs">
+<span class="material-symbols-outlined text-secondary" data-icon="verified">verified</span>
+<p class="text-label-bold font-label-bold">Verified</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Data sourced from AstraFlow Nodes.</p>
+</div>
+</section>
+<!-- Decorative Aesthetic Image -->
+<section class="rounded-2xl overflow-hidden shadow-lg h-48 relative mt-lg">
+<div class="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent z-10"></div>
+<div class="absolute bottom-md left-md z-20 text-white">
+<p class="text-label-bold font-label-bold uppercase">Future Planning</p>
+<p class="text-body-md opacity-90">Smarter choices for a better flow.</p>
+</div>
+<img alt="Professional analytics" class="w-full h-full object-cover" data-alt="A high-contrast, minimalist photograph of a sleek workstation with a digital dashboard displaying glowing data visualizations and futuristic charts. The lighting is cold and professional with soft blue-tinted shadows on white surfaces. The composition is clean and airy, utilizing generous whitespace to convey a sense of calm efficiency and modern technological sophistication in a corporate setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA28WSAoXCmMelsDnSo4fWqr9U2n6E_ds_z-HeDyPWUZqT8ono11TI7VgdF1_k9DAyr4JwKNoSxW9bS8VoODCJ1tbkq8RM4e5MPT7SaDBB9qsDw-ZbmKw8EgQk5aK-uCMMOjLJKXv4edbwYxWSXituF_T4J4eoUs0ytwIce1t_2RexR2b7ROrP0Io2qLVSAs7scSbsYAMLfAuC6B0oOeh4kZO0i17cCXpgSe-l9-FYyDah2Urr_COkzW2F864QvX0ZnM2QelFe_KCE"/>
+</section>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-surface dark:bg-inverse-surface border-t border-outline-variant dark:border-outline flex justify-around items-center px-4 py-2 pb-safe shadow-sm">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:bg-surface-container-high transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-label-sm font-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:bg-surface-container-high transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="request_quote">request_quote</span>
+<span class="text-label-sm font-label-sm">Prices</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary text-on-primary-container dark:text-on-primary rounded-xl px-3 py-1.5 transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="online_prediction" style="font-variation-settings: 'FILL' 1;">online_prediction</span>
+<span class="text-label-sm font-label-sm">Predict</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:bg-surface-container-high transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-label-sm font-label-sm">Profile</span>
+</a>
+</nav>
+<script>
+        function validateInput() {
+            const input = document.getElementById('liters-input');
+            const val = parseFloat(input.value);
+            if (val < 0) input.value = 0;
+        }
+
+        function calculateImpact() {
+            const liters = parseFloat(document.getElementById('liters-input').value) || 0;
+            const container = document.getElementById('results-container');
+            const priceEl = document.getElementById('result-price');
+            const carbonEl = document.getElementById('result-carbon');
+            const alertBox = document.getElementById('price-alert');
+            const alertLossEl = document.getElementById('alert-loss');
+
+            if (liters <= 0) return;
+
+            // Simplified Mock Calculations
+            const pricePerLiter = 1.62;
+            const carbonPerLiter = 2.3; // kg CO2
+            const futureIncrease = 0.042; // 4.2%
+
+            const totalCost = liters * pricePerLiter;
+            const totalCarbon = liters * carbonPerLiter;
+            const futureLoss = totalCost * futureIncrease;
+
+            // Update UI with animation sequence
+            container.classList.remove('hidden');
+            
+            // Animate values
+            animateValue(priceEl, 0, totalCost, 600, "$");
+            animateValue(carbonEl, 0, totalCarbon, 800, "", " kg CO₂");
+
+            // Show alert for high values
+            if (liters > 40) {
+                alertBox.classList.remove('hidden');
+                alertLossEl.innerText = `+$${futureLoss.toFixed(2)}`;
+            } else {
+                alertBox.classList.add('hidden');
+            }
+        }
+
+        function animateValue(obj, start, end, duration, prefix = "", suffix = "") {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const currentVal = (progress * (end - start) + start);
+                obj.innerHTML = prefix + currentVal.toFixed(progress === 1 ? 2 : 1) + suffix;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+    </script>
+</body></html>

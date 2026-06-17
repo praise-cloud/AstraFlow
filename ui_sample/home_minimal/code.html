@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>AstraFlow | Fuel Intelligence</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Work+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#5a5f64",
+                    "on-primary-container": "#7f9df8",
+                    "surface": "#f9f9fc",
+                    "on-error": "#ffffff",
+                    "surface-dim": "#dadadc",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#003087",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#dfe3e9",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#42474c",
+                    "inverse-primary": "#b4c5ff",
+                    "outline": "#747683",
+                    "surface-tint": "#3959b0",
+                    "tertiary": "#440f00",
+                    "on-tertiary-fixed": "#390b00",
+                    "on-primary-fixed": "#00174b",
+                    "inverse-on-surface": "#f0f0f3",
+                    "on-surface-variant": "#444652",
+                    "secondary-fixed-dim": "#c2c7cd",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed": "#171c20",
+                    "tertiary-fixed-dim": "#ffb59d",
+                    "surface-container-highest": "#e2e2e5",
+                    "inverse-surface": "#2f3133",
+                    "tertiary-container": "#691c00",
+                    "on-background": "#1a1c1e",
+                    "surface-bright": "#f9f9fc",
+                    "on-tertiary-fixed-variant": "#7e2b0d",
+                    "surface-container-high": "#e8e8ea",
+                    "on-tertiary-container": "#f1815c",
+                    "outline-variant": "#c4c6d4",
+                    "on-surface": "#1a1c1e",
+                    "background": "#f9f9fc",
+                    "error": "#ba1a1a",
+                    "on-secondary-container": "#5e6368",
+                    "surface-variant": "#e2e2e5",
+                    "primary": "#001d59",
+                    "on-secondary": "#ffffff",
+                    "surface-container": "#eeeef0",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-fixed-variant": "#1c4197",
+                    "secondary-container": "#dce0e6",
+                    "surface-container-low": "#f3f3f6",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#ffdbd0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "xl": "32px",
+                    "lg": "24px",
+                    "xs": "8px",
+                    "sm": "12px",
+                    "base": "4px",
+                    "container-margin": "16px",
+                    "gutter": "12px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Work Sans"],
+                    "label-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Work Sans"],
+                    "label-bold": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Work Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-bold": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            scroll-behavior: smooth;
+        }
+        .fuel-card-gradient {
+            background: linear-gradient(135deg, #f0f4fa 0%, #e2eaf5 100%);
+        }
+        .price-card {
+            border: 1px solid #DEE5EF;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Top Navigation -->
+<header class="bg-surface sticky top-0 z-50 flex justify-between items-center px-container-margin w-full h-14">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" data-icon="local_gas_station">local_gas_station</span>
+<h1 class="text-headline-md-mobile font-headline-md-mobile font-bold text-primary">AstraFlow</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary-container/50 transition-colors duration-200">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="account_circle">account_circle</span>
+</button>
+</header>
+<main class="px-container-margin pt-lg pb-32 max-w-xl mx-auto">
+<!-- Hero Recommendation Section -->
+<section class="mb-xl">
+<div class="fuel-card-gradient rounded-xl p-lg flex flex-col gap-sm shadow-sm relative overflow-hidden">
+<div class="absolute -right-8 -top-8 opacity-10">
+<span class="material-symbols-outlined text-[120px]" data-icon="water_drop">water_drop</span>
+</div>
+<span class="text-label-bold font-label-bold text-on-primary-fixed-variant tracking-wider uppercase">Recommendation</span>
+<h2 class="text-headline-lg-mobile font-headline-lg-mobile text-primary leading-tight">Fuel Up Now</h2>
+<p class="text-body-md text-on-surface-variant max-w-[85%]">Prices are projected to rise by 4.2% in the next 24 hours. Fill your tank tonight for maximum savings.</p>
+</div>
+</section>
+<!-- Current Prices Bento Grid -->
+<section class="mb-xl">
+<div class="grid grid-cols-2 gap-gutter">
+<!-- Petrol Card -->
+<div class="price-card bg-white rounded-xl p-md flex flex-col gap-xs transition-transform active:scale-95 duration-150">
+<div class="flex justify-between items-start">
+<span class="text-label-bold font-label-bold text-outline uppercase">Petrol</span>
+<div class="flex items-center text-primary">
+<span class="material-symbols-outlined text-sm" data-icon="trending_down">trending_down</span>
+<span class="text-label-sm font-label-sm ml-1">0.2</span>
+</div>
+</div>
+<div class="mt-xs">
+<span class="text-headline-lg font-headline-lg text-on-surface tracking-tighter">$1.64</span>
+<span class="text-label-sm font-label-sm text-outline">/L</span>
+</div>
+<div class="mt-xs py-1 px-2 bg-primary-fixed/30 rounded w-fit">
+<span class="text-[10px] font-semibold text-primary uppercase">Lowest 7-day</span>
+</div>
+</div>
+<!-- Diesel Card -->
+<div class="price-card bg-white rounded-xl p-md flex flex-col gap-xs transition-transform active:scale-95 duration-150">
+<div class="flex justify-between items-start">
+<span class="text-label-bold font-label-bold text-outline uppercase">Diesel</span>
+<div class="flex items-center text-error">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+<span class="text-label-sm font-label-sm ml-1">0.5</span>
+</div>
+</div>
+<div class="mt-xs">
+<span class="text-headline-lg font-headline-lg text-on-surface tracking-tighter">$1.78</span>
+<span class="text-label-sm font-label-sm text-outline">/L</span>
+</div>
+<div class="mt-xs py-1 px-2 bg-error-container/40 rounded w-fit">
+<span class="text-[10px] font-semibold text-error uppercase">Rising</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Contextual Insight -->
+<section class="bg-surface-container-low rounded-lg p-md border border-outline-variant/30">
+<div class="flex items-start gap-md">
+<div class="bg-primary text-white p-2 rounded-lg">
+<span class="material-symbols-outlined text-[20px]" data-icon="lightbulb">lightbulb</span>
+</div>
+<div class="flex flex-col gap-1">
+<h3 class="text-body-md font-semibold text-on-surface">Market Update</h3>
+<p class="text-body-md text-on-surface-variant">Global crude supply fluctuations are driving local price hikes. Expect Diesel to peak by Wednesday.</p>
+</div>
+</div>
+</section>
+<!-- Near You (Simplified List) -->
+<section class="mt-xl">
+<div class="flex justify-between items-center mb-md">
+<h3 class="text-label-bold font-label-bold text-on-surface-variant uppercase">Best Nearby</h3>
+<button class="text-label-bold font-label-bold text-primary">View Map</button>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="flex items-center justify-between p-md bg-white rounded-xl price-card">
+<div class="flex flex-col">
+<span class="text-body-md font-semibold">Shell Metro Central</span>
+<span class="text-label-sm text-outline">0.8 miles away</span>
+</div>
+<div class="text-right">
+<div class="text-body-lg font-bold text-primary">$1.62</div>
+<div class="text-[10px] text-on-primary-fixed-variant bg-primary-fixed px-1.5 rounded-full inline-block">BEST PRICE</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-md bg-white rounded-xl price-card opacity-80">
+<div class="flex flex-col">
+<span class="text-body-md font-semibold">BP Express</span>
+<span class="text-label-sm text-outline">1.4 miles away</span>
+</div>
+<div class="text-right">
+<div class="text-body-lg font-bold">$1.68</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface border-t border-outline-variant shadow-sm">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-3 py-1.5 transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-label-sm font-label-sm mt-1">Home</span>
+</a>
+<!-- Prices -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1.5 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="request_quote">request_quote</span>
+<span class="text-label-sm font-label-sm mt-1">Prices</span>
+</a>
+<!-- Predict -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1.5 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="online_prediction">online_prediction</span>
+<span class="text-label-sm font-label-sm mt-1">Predict</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1.5 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-label-sm font-label-sm mt-1">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple touch interaction for cards
+        document.querySelectorAll('.price-card').forEach(card => {
+            card.addEventListener('click', () => {
+                // Future interaction logic here
+            });
+        });
+    </script>
+</body></html>

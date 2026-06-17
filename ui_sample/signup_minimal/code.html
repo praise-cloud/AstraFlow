@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Signup | AstraFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#5a5f64",
+                    "on-primary-container": "#7f9df8",
+                    "surface": "#f9f9fc",
+                    "on-error": "#ffffff",
+                    "surface-dim": "#dadadc",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#003087",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#dfe3e9",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#42474c",
+                    "inverse-primary": "#b4c5ff",
+                    "outline": "#747683",
+                    "surface-tint": "#3959b0",
+                    "tertiary": "#440f00",
+                    "on-tertiary-fixed": "#390b00",
+                    "on-primary-fixed": "#00174b",
+                    "inverse-on-surface": "#f0f0f3",
+                    "on-surface-variant": "#444652",
+                    "secondary-fixed-dim": "#c2c7cd",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed": "#171c20",
+                    "tertiary-fixed-dim": "#ffb59d",
+                    "surface-container-highest": "#e2e2e5",
+                    "inverse-surface": "#2f3133",
+                    "tertiary-container": "#691c00",
+                    "on-background": "#1a1c1e",
+                    "surface-bright": "#f9f9fc",
+                    "on-tertiary-fixed-variant": "#7e2b0d",
+                    "surface-container-high": "#e8e8ea",
+                    "on-tertiary-container": "#f1815c",
+                    "outline-variant": "#c4c6d4",
+                    "on-surface": "#1a1c1e",
+                    "background": "#f9f9fc",
+                    "error": "#ba1a1a",
+                    "on-secondary-container": "#5e6368",
+                    "surface-variant": "#e2e2e5",
+                    "primary": "#001d59",
+                    "on-secondary": "#ffffff",
+                    "surface-container": "#eeeef0",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-fixed-variant": "#1c4197",
+                    "secondary-container": "#dce0e6",
+                    "surface-container-low": "#f3f3f6",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#ffdbd0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "xl": "32px",
+                    "lg": "24px",
+                    "xs": "8px",
+                    "sm": "12px",
+                    "base": "4px",
+                    "container-margin": "16px",
+                    "gutter": "12px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Work Sans"],
+                    "label-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Work Sans"],
+                    "label-bold": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Work Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-bold": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f9f9fc;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .input-focus-ring:focus {
+            outline: none;
+            border-color: #001d59;
+            box-shadow: 0 0 0 1px #001d59;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen text-on-surface">
+<main class="flex-grow flex flex-col items-center justify-center px-container-margin py-xl">
+<div class="w-full max-w-md space-y-lg">
+<!-- Brand Identity -->
+<header class="flex flex-col items-center text-center space-y-sm">
+<div class="flex items-center space-x-sm">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="local_gas_station">local_gas_station</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">AstraFlow</h1>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-[280px]">
+                    Create your account to start predicting energy flows and price shifts.
+                </p>
+</header>
+<!-- Signup Form Card -->
+<section class="bg-white rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] border border-outline-variant p-lg space-y-lg">
+<form class="space-y-md" id="signupForm">
+<!-- Name Field -->
+<div class="space-y-base">
+<label class="block font-label-bold text-label-bold text-on-surface-variant" for="name">FULL NAME</label>
+<input class="w-full h-12 px-md font-body-md text-body-md border border-outline-variant rounded-lg bg-surface-container-lowest transition-all input-focus-ring" id="name" name="name" placeholder="Enter your name" required="" type="text"/>
+</div>
+<!-- Email Field -->
+<div class="space-y-base">
+<div class="flex justify-between items-center">
+<label class="block font-label-bold text-label-bold text-on-surface-variant" for="email">EMAIL ADDRESS</label>
+<span class="hidden text-error font-label-bold text-[10px] bg-error-container px-xs py-[2px] rounded-full" id="emailErrorTag">INVALID EMAIL</span>
+</div>
+<input class="w-full h-12 px-md font-body-md text-body-md border border-outline-variant rounded-lg bg-surface-container-lowest transition-all input-focus-ring" id="email" name="email" placeholder="name@company.com" required="" type="email"/>
+</div>
+<!-- Password Field -->
+<div class="space-y-base">
+<label class="block font-label-bold text-label-bold text-on-surface-variant" for="password">PASSWORD</label>
+<div class="relative">
+<input class="w-full h-12 px-md pr-12 font-body-md text-body-md border border-outline-variant rounded-lg bg-surface-container-lowest transition-all input-focus-ring" id="password" name="password" placeholder="Min. 8 characters" required="" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined" id="passwordIcon">visibility</span>
+</button>
+</div>
+</div>
+<!-- CTA Button -->
+<div class="pt-sm">
+<button class="w-full h-12 bg-primary text-on-primary font-label-bold text-body-lg rounded-lg shadow-sm hover:bg-primary-container transition-all active:scale-[0.98] flex items-center justify-center space-x-sm" type="submit">
+<span>Create Account</span>
+<span class="material-symbols-outlined text-lg" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</form>
+<!-- Terms -->
+<p class="font-body-md text-[12px] text-center text-outline leading-relaxed px-sm">
+                    By signing up, you agree to our 
+                    <a class="text-primary hover:underline font-semibold" href="#">Terms of Service</a> 
+                    and 
+                    <a class="text-primary hover:underline font-semibold" href="#">Privacy Policy</a>.
+                </p>
+</section>
+<!-- Secondary Action -->
+<footer class="text-center font-body-md text-body-md text-on-surface-variant">
+                Already have an account? 
+                <a class="text-primary font-semibold hover:underline" href="#">Log in</a>
+</footer>
+</div>
+</main>
+<!-- Background Decorative Elements -->
+<div class="fixed top-0 right-0 -z-10 opacity-40">
+
+</div>
+<div class="fixed bottom-0 left-0 -z-10 opacity-30 blur-3xl bg-primary/5 rounded-full w-96 h-96 -translate-x-1/2 translate-y-1/2"></div>
+<script>
+        function togglePassword() {
+            const passInput = document.getElementById('password');
+            const passIcon = document.getElementById('passwordIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                passIcon.textContent = 'visibility_off';
+            } else {
+                passInput.type = 'password';
+                passIcon.textContent = 'visibility';
+            }
+        }
+
+        const signupForm = document.getElementById('signupForm');
+        const emailInput = document.getElementById('email');
+        const emailErrorTag = document.getElementById('emailErrorTag');
+
+        signupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Simple validation simulation
+            if (!emailInput.value.includes('@')) {
+                emailInput.classList.add('border-error');
+                emailErrorTag.classList.remove('hidden');
+                setTimeout(() => {
+                    emailInput.classList.remove('border-error');
+                    emailErrorTag.classList.add('hidden');
+                }, 3000);
+            } else {
+                // Success visual state
+                const btn = signupForm.querySelector('button[type="submit"]');
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span>';
+                btn.disabled = true;
+                setTimeout(() => {
+                    alert('Signup Success! Welcome to AstraFlow.');
+                    btn.innerHTML = '<span>Create Account</span><span class="material-symbols-outlined text-lg">arrow_forward</span>';
+                    btn.disabled = false;
+                }, 1500);
+            }
+        });
+    </script>
+</body></html>

@@ -1,0 +1,348 @@
+import { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+
+import { api } from '@/services/api';
+import { LineChart } from '@/components/LineChart';
+
+type ForecastData = {
+  fuel_type: string;
+  current_price: number;
+  forecast_days: number;
+  trend: string;
+  change_pct: number;
+  avg_forecast: number;
+  min_forecast: number;
+  max_forecast: number;
+  confidence_interval: { lower: number; upper: number };
+  points: Array<{ date: string; label: string; predicted: number; lower_bound: number; upper_bound: number }>;
+  recommendation: { action: string; title: string; message: string; urgency: string };
+  model: string;
+};
+
+const TREND_COLORS: Record<string, string> = {
+  up: '#d32f2f', down: '#2e7d32', stable: '#f57c00',
+};
+
+export default function PredictScreen() {
+  const [liters, setLiters] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [forecastLoading, setForecastLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<any>(null);
+  const [forecast, setForecast] = useState<ForecastData | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [selectedFuel, setSelectedFuel] = useState<'petrol' | 'diesel'>('petrol');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchForecast = useCallback(async (fuel: string) => {
+    try {
+      const res = await api.predict.forecast(30, fuel);
+      setForecast(res);
+    } catch {
+      // fallback handled in render
+    } finally {
+      setForecastLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchForecast(selectedFuel);
+  }, [selectedFuel]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchForecast(selectedFuel);
+    setRefreshing(false);
+  }, [selectedFuel, fetchForecast]);
+
+  const handleCalculate = async () => {
+    const val = parseFloat(liters);
+    if (!val || val <= 0) {
+      setError('Please enter a valid volume');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.predict.get(val);
+      setResult(res);
+      setShowResult(true);
+    } catch (err: any) {
+      if (err.status === 401) {
+        router.replace('/login');
+        return;
+      }
+      const ppl = forecast?.current_price || 1.62;
+      const fallback = {
+        liters: val, price_per_liter: ppl, total_cost: parseFloat((val * ppl).toFixed(2)),
+        carbon_footprint_kg: parseFloat((val * 2.3).toFixed(2)),
+        price_index: forecast?.trend ? forecast.trend.charAt(0).toUpperCase() + forecast.trend.slice(1) : 'Stable', price_alert: false, alert_message: null,
+        future_increase_pct: forecast?.change_pct || 0, future_loss: 0,
+        forecast: { avg_forecast_price: forecast?.avg_forecast || ppl, trend: forecast?.trend || 'stable', model: 'local', recommendation: forecast?.recommendation || { action: 'monitor', title: 'No Data', message: '', urgency: 'none' } },
+      };
+      setResult(fallback);
+      setShowResult(true);
+      setError('Could not reach server — showing estimate');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chartData = forecast?.points.map(p => ({ label: p.label, value: p.predicted })) || [];
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerIcon}>⛽</Text>
+          <Text style={styles.headerTitle}>AstraFlow</Text>
+        </View>
+        <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
+          <Text style={styles.profileIcon}>👤</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {error && !loading && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        <View style={styles.forecastCard}>
+          <View style={styles.fuelToggle}>
+            <TouchableOpacity
+              style={[styles.fuelBtn, selectedFuel === 'petrol' && styles.fuelBtnActive]}
+              onPress={() => setSelectedFuel('petrol')}
+            >
+              <Text style={[styles.fuelBtnText, selectedFuel === 'petrol' && styles.fuelBtnTextActive]}>Petrol</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.fuelBtn, selectedFuel === 'diesel' && styles.fuelBtnActive]}
+              onPress={() => setSelectedFuel('diesel')}
+            >
+              <Text style={[styles.fuelBtnText, selectedFuel === 'diesel' && styles.fuelBtnTextActive]}>Diesel</Text>
+            </TouchableOpacity>
+          </View>
+
+          {forecastLoading ? (
+            <View style={styles.forecastLoading}>
+              <ActivityIndicator size="small" color="#003087" />
+              <Text style={styles.forecastLoadingText}>Running ML model...</Text>
+            </View>
+          ) : forecast ? (
+            <>
+              <View style={styles.forecastHeader}>
+                <View>
+                  <Text style={styles.forecastLabel}>30-Day Forecast</Text>
+                  <Text style={styles.forecastPrice}>
+                    ${forecast.avg_forecast.toFixed(3)}
+                    <Text style={styles.forecastUnit}> /L avg</Text>
+                  </Text>
+                </View>
+                <View style={[styles.trendBadge, { backgroundColor: TREND_COLORS[forecast.trend] + '20' }]}>
+                  <Text style={[styles.trendBadgeText, { color: TREND_COLORS[forecast.trend] }]}>
+                    {forecast.trend === 'up' ? '↑' : forecast.trend === 'down' ? '↓' : '→'} {Math.abs(forecast.change_pct).toFixed(1)}%
+                  </Text>
+                </View>
+              </View>
+
+              <LineChart
+                data={chartData}
+                color={selectedFuel === 'petrol' ? '#003087' : '#d32f2f'}
+                fillColor={selectedFuel === 'petrol' ? 'rgba(0,48,135,0.06)' : 'rgba(211,47,47,0.06)'}
+              />
+
+              <View style={styles.forecastMeta}>
+                <Text style={styles.modelLabel}>Model: {forecast.model}</Text>
+              </View>
+
+              {forecast.recommendation.urgency !== 'none' && (
+                <View style={[styles.recCard, { borderLeftColor: TREND_COLORS[forecast.trend] }]}>
+                  <Text style={styles.recTitle}>{forecast.recommendation.title}</Text>
+                  <Text style={styles.recText}>{forecast.recommendation.message}</Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <Text style={styles.noDataText}>Unable to load forecast</Text>
+          )}
+        </View>
+
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Current</Text>
+            <Text style={styles.statValue}>${forecast?.current_price.toFixed(3) || '—'}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Min</Text>
+            <Text style={styles.statValue}>${forecast?.min_forecast.toFixed(3) || '—'}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Max</Text>
+            <Text style={styles.statValue}>${forecast?.max_forecast.toFixed(3) || '—'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.inputCard}>
+          <Text style={styles.inputLabel}>YOUR CONSUMPTION</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 50"
+              placeholderTextColor="#747683"
+              value={liters}
+              onChangeText={(v) => { setLiters(v); setError(null); }}
+              keyboardType="numeric"
+              editable={!loading}
+            />
+            <Text style={styles.inputSuffix}>L</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.calcButton, (!liters || loading) && styles.buttonDisabled]}
+            onPress={handleCalculate}
+            disabled={!liters || loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <>
+                <Text style={styles.calcButtonText}>Project My Costs</Text>
+                <Text style={styles.calcButtonIcon}>📊</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {showResult && result && (
+          <View style={styles.resultSection}>
+            <View style={styles.resultCard}>
+              <View style={styles.resultHeader}>
+                <View>
+                  <Text style={styles.resultLabel}>
+                    {result.forecast.trend === 'up' ? 'Projected Cost (30d)' : 'Current Cost'}
+                  </Text>
+                  <Text style={styles.resultPrice}>${result.total_cost.toFixed(2)}</Text>
+                </View>
+                <View style={styles.resultIconContainer}>
+                  <Text style={styles.resultIcon}>💰</Text>
+                </View>
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.resultGrid}>
+                <View>
+                  <Text style={styles.resultGridLabel}>Price / L</Text>
+                  <Text style={styles.resultGridValue}>${result.price_per_liter.toFixed(3)}</Text>
+                </View>
+                <View>
+                  <Text style={styles.resultGridLabel}>Carbon</Text>
+                  <Text style={styles.resultGridValue}>{result.carbon_footprint_kg.toFixed(1)} kg</Text>
+                </View>
+                <View>
+                  <Text style={styles.resultGridLabel}>Forecast Δ</Text>
+                  <Text style={[styles.resultGridValue, { color: result.future_increase_pct > 0 ? '#ff8a80' : '#a5d6a7' }]}>
+                    {result.future_increase_pct > 0 ? '+' : ''}{result.future_increase_pct.toFixed(1)}%
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {result.forecast.recommendation.urgency !== 'none' && (
+              <View style={[styles.alertCard, { borderLeftColor: result.future_increase_pct > 3 ? '#d32f2f' : '#f57c00' }]}>
+                <Text style={styles.alertIcon}>📈</Text>
+                <Text style={styles.alertText}>{result.forecast.recommendation.message}</Text>
+              </View>
+            )}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f9f9fc' },
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, height: 56, backgroundColor: '#f9f9fc',
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerIcon: { fontSize: 22 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#003087' },
+  profileBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  profileIcon: { fontSize: 22 },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 16, gap: 16, paddingBottom: 32 },
+  errorBanner: { backgroundColor: '#ffdad6', padding: 12, borderRadius: 8 },
+  errorText: { fontSize: 13, color: '#93000a' },
+  forecastCard: {
+    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
+    padding: 20, gap: 16,
+  },
+  fuelToggle: { flexDirection: 'row', gap: 8 },
+  fuelBtn: {
+    flex: 1, paddingVertical: 8, borderRadius: 6,
+    backgroundColor: '#f9f9fc', borderWidth: 1, borderColor: '#c4c6d4',
+    alignItems: 'center',
+  },
+  fuelBtnActive: { borderColor: '#003087', backgroundColor: '#dbe1ff' },
+  fuelBtnText: { fontSize: 13, fontWeight: '600', color: '#747683' },
+  fuelBtnTextActive: { color: '#003087' },
+  forecastLoading: { alignItems: 'center', padding: 32, gap: 8 },
+  forecastLoadingText: { fontSize: 13, color: '#747683' },
+  forecastHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  forecastLabel: { fontSize: 12, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
+  forecastPrice: { fontSize: 24, fontWeight: '700', color: '#1a1c1e' },
+  forecastUnit: { fontSize: 12, fontWeight: '400', color: '#747683' },
+  trendBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  trendBadgeText: { fontSize: 12, fontWeight: '700' },
+  forecastMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  modelLabel: { fontSize: 11, color: '#747683', fontStyle: 'italic' },
+  recCard: {
+    backgroundColor: '#f3f3f6', borderRadius: 8, borderLeftWidth: 4,
+    padding: 14, gap: 4,
+  },
+  recTitle: { fontSize: 14, fontWeight: '600', color: '#1a1c1e' },
+  recText: { fontSize: 13, color: '#444652', lineHeight: 18 },
+  noDataText: { textAlign: 'center', color: '#747683', padding: 24 },
+  statsGrid: { flexDirection: 'row', gap: 8 },
+  statCard: {
+    flex: 1, backgroundColor: '#ffffff', borderRadius: 8, borderWidth: 1, borderColor: '#dee5ef',
+    padding: 12, alignItems: 'center', gap: 4,
+  },
+  statLabel: { fontSize: 11, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
+  statValue: { fontSize: 16, fontWeight: '700', color: '#1a1c1e' },
+  inputCard: { backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#c4c6d4', padding: 24, gap: 12 },
+  inputLabel: { fontSize: 12, fontWeight: '600', color: '#444652', letterSpacing: 0.5, textTransform: 'uppercase' },
+  inputRow: { position: 'relative' },
+  input: { height: 48, borderWidth: 1, borderColor: '#c4c6d4', borderRadius: 8, paddingHorizontal: 16, fontSize: 16, color: '#1a1c1e', backgroundColor: '#f9f9fc', paddingRight: 40 },
+  inputSuffix: { position: 'absolute', right: 16, top: 14, fontSize: 14, fontWeight: '600', color: '#747683' },
+  calcButton: { height: 48, backgroundColor: '#003087', borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  buttonDisabled: { opacity: 0.6 },
+  calcButtonText: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
+  calcButtonIcon: { fontSize: 18 },
+  resultSection: { gap: 12 },
+  resultCard: { backgroundColor: '#003087', borderRadius: 12, padding: 24, gap: 16 },
+  resultHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  resultLabel: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  resultPrice: { fontSize: 32, fontWeight: '700', color: '#ffffff' },
+  resultIconContainer: { backgroundColor: 'rgba(255,255,255,0.1)', padding: 8, borderRadius: 8 },
+  resultIcon: { fontSize: 24 },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
+  resultGrid: { flexDirection: 'row', gap: 24 },
+  resultGridLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 },
+  resultGridValue: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
+  alertCard: {
+    backgroundColor: 'rgba(255,218,214,0.3)', borderWidth: 1, borderColor: 'rgba(186,26,26,0.1)',
+    borderRadius: 8, padding: 16, borderLeftWidth: 4, gap: 4,
+  },
+  alertIcon: { fontSize: 18 },
+  alertText: { fontSize: 14, color: '#ba1a1a', fontWeight: '600', flex: 1, lineHeight: 20 },
+});
