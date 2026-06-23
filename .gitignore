@@ -30,8 +30,24 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Database
+*.db
+*.db.old
+
+# Logs
+*.log
+
+# Temp files
+nul
+
 # local env files
 .env
+.env.*
 .env*.local
 
 # typescript

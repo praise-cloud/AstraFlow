@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, Enum as SAEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.types import Uuid
 from datetime import datetime, timezone
 
 from backend.db.database import Base
@@ -18,7 +18,7 @@ class BusinessType(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)

@@ -74,6 +74,8 @@ export const api = {
         market_update: string;
         business_type: string;
         user_name: string;
+        model: string;
+        evaluation: { mae: number; rmse: number; r2: number };
       }>('/dashboard'),
   },
 
@@ -118,6 +120,8 @@ export const api = {
         points: Array<{ date: string; label: string; predicted: number; lower_bound: number; upper_bound: number }>;
         recommendation: { action: string; title: string; message: string; urgency: string };
         model: string;
+        evaluation: { mae: number; rmse: number; r2: number };
+        feature_importance: Record<string, number>;
       }>(`/forecast?days=${days}&fuel_type=${fuel_type}`),
   },
 
@@ -156,6 +160,30 @@ export const api = {
           submitted_at: string;
         }>;
       }>('/surveys/insights'),
+  },
+
+  routes: {
+    optimize: (origin: string, destination: string, fuel_type: string = 'petrol') =>
+      request<{
+        origin: { query: string; lat: number; lng: number };
+        destination: { query: string; lat: number; lng: number };
+        fuel_type: string;
+        current_price: number;
+        avg_future_price: number;
+        trend: string;
+        change_pct: number;
+        routes: Array<{
+          id: number;
+          distance_km: number;
+          duration_min: number;
+          fuel_liters: number;
+          cost_now: number;
+          cost_future: number;
+          savings_if_wait: number;
+          geometry: { type: string; coordinates: [number, number][] };
+          legs: Array<{ distance_km: number; duration_min: number; summary: string }>;
+        }>;
+      }>(`/routes/optimize?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&fuel_type=${fuel_type}`),
   },
 
   notifications: {

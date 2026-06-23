@@ -1,4 +1,3 @@
-import json
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -30,7 +29,7 @@ def submit_survey(
         business_type=user.business_type,
         monthly_fuel_spend=body.monthly_fuel_spend,
         impact_level=body.impact_level,
-        concern_areas=json.dumps(body.concern_areas) if body.concern_areas else None,
+        concern_areas=body.concern_areas,
         comments=body.comments,
     )
     db.add(survey)
@@ -56,7 +55,7 @@ def list_surveys(
             "business_type": s.business_type.value,
             "monthly_fuel_spend": float(s.monthly_fuel_spend) if s.monthly_fuel_spend else None,
             "impact_level": s.impact_level,
-            "concern_areas": json.loads(s.concern_areas) if s.concern_areas else None,
+            "concern_areas": s.concern_areas,
             "comments": s.comments,
             "submitted_at": s.submitted_at.isoformat(),
         }
@@ -96,7 +95,7 @@ def survey_insights(
                 "id": s.id,
                 "impact_level": s.impact_level,
                 "monthly_fuel_spend": float(s.monthly_fuel_spend) if s.monthly_fuel_spend else None,
-                "concern_areas": json.loads(s.concern_areas) if s.concern_areas else None,
+                "concern_areas": s.concern_areas,
                 "submitted_at": s.submitted_at.isoformat(),
             }
             for s in user_surveys

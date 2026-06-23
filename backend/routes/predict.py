@@ -53,6 +53,8 @@ def predict(
             "trend": forecast["trend"],
             "model": forecast["model"],
             "recommendation": rec,
+            "evaluation": forecast.get("evaluation", {}),
+            "feature_importance": forecast.get("feature_importance", {}),
         },
     }
 

@@ -18,6 +18,11 @@ Base = declarative_base()
 
 
 def init_db():
+    import backend.models.user  # noqa: F401
+    import backend.models.fuel_price  # noqa: F401
+    import backend.models.push_token  # noqa: F401
+    import backend.models.recommendation  # noqa: F401
+    import backend.models.survey  # noqa: F401
     Base.metadata.create_all(bind=engine)
 
 

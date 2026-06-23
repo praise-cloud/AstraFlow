@@ -3,9 +3,56 @@ from typing import Optional
 from random import uniform, seed
 
 import numpy as np
+from sqlalchemy.orm import Session
+
+from backend.db.database import SessionLocal
+from backend.models.fuel_price import FuelPrice
+
+
+def load_training_data_from_db(days: int = 365, db: Optional[Session] = None) -> list[dict]:
+    """Load real fuel price history from the database."""
+    own_session = False
+    if db is None:
+        db = SessionLocal()
+        own_session = True
+    try:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        records = (
+            db.query(FuelPrice)
+            .filter(FuelPrice.date >= cutoff)
+            .order_by(FuelPrice.date.asc())
+            .all()
+        )
+        if not records:
+            return []
+
+        by_date: dict[str, dict] = {}
+        for r in records:
+            key = str(r.date)
+            if key not in by_date:
+                dt = datetime.combine(r.date, datetime.min.time()).replace(tzinfo=timezone.utc)
+                by_date[key] = {
+                    "date": key,
+                    "timestamp": dt.timestamp(),
+                    "petrol": None,
+                    "diesel": None,
+                }
+            fuel_attr = r.fuel_type.lower()
+            if fuel_attr in ("petrol", "diesel"):
+                by_date[key][fuel_attr] = float(r.price)
+
+        result = [
+            v for v in by_date.values()
+            if v["petrol"] is not None or v["diesel"] is not None
+        ]
+        return result
+    finally:
+        if own_session:
+            db.close()
 
 
 def generate_training_data(days: int = 365, seed_val: int = 42) -> list[dict]:
+    """Fallback: generate synthetic training data when real data is unavailable."""
     seed(seed_val)
     rng = np.random.default_rng(seed_val)
 

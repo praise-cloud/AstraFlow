@@ -27,7 +27,7 @@ class AuthResponse(BaseModel):
 
 @router.post("/register")
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
-    if req.business_type not in BusinessType.values():
+    if req.business_type not in [e.value for e in BusinessType]:
         raise HTTPException(status_code=400, detail="Invalid business type")
 
     existing = db.query(User).filter(User.email == req.email).first()
