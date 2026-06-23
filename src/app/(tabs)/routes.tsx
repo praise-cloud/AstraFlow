@@ -1,8 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { WebView } from 'react-native-webview';
 
 import { api } from '@/services/api';
 
@@ -36,49 +35,41 @@ const TREND_COLORS: Record<string, string> = {
 
 function buildMapHtml(route: RouteOption | null, origin: { lat: number; lng: number }, dest: { lat: number; lng: number }): string {
   const routeData = route ? JSON.stringify(route.geometry) : 'null';
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    * { margin:0; padding:0; }
-    body { overflow: hidden; }
-    #map { width: 100vw; height: 100vh; }
-  </style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>*{margin:0;padding:0}body{overflow:hidden}#map{width:100vw;height:100vh}</style>
 </head>
 <body>
-  <div id="map"></div>
-  <script>
-    var map = L.map('map', { zoomControl: false, attributionControl: false });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-    }).addTo(map);
-
-    L.marker([${origin.lat}, ${origin.lng}]).addTo(map)
-      .bindPopup('Origin');
-
-    L.marker([${dest.lat}, ${dest.lng}]).addTo(map)
-      .bindPopup('Destination');
-
-    var routeData = ${routeData};
-    if (routeData) {
-      var polyline = L.geoJSON(routeData, {
-        style: { color: '#003087', weight: 4, opacity: 0.8 }
-      }).addTo(map);
-      map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
-    } else {
-      var group = L.featureGroup([
-        L.marker([${origin.lat}, ${origin.lng}]),
-        L.marker([${dest.lat}, ${dest.lng}])
-      ]);
-      map.fitBounds(group.getBounds(), { padding: [30, 30] });
-    }
-  </script>
+<div id="map"></div>
+<script>
+var map=L.map('map',{zoomControl:false,attributionControl:false});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+L.marker([${origin.lat},${origin.lng}]).addTo(map).bindPopup('Origin');
+L.marker([${dest.lat},${dest.lng}]).addTo(map).bindPopup('Destination');
+var routeData=${routeData};
+if(routeData){var poly=L.geoJSON(routeData,{style:{color:'#003087',weight:4,opacity:0.8}}).addTo(map);map.fitBounds(poly.getBounds(),{padding:[30,30]});}
+else{var grp=L.featureGroup([L.marker([${origin.lat},${origin.lng}]),L.marker([${dest.lat},${dest.lng}])]);map.fitBounds(grp.getBounds(),{padding:[30,30]});}
+</script>
 </body>
 </html>`;
+}
+
+function MapView({ html, style }: { html: string; style?: any }) {
+  if (Platform.OS === 'web') {
+    return (
+      <iframe
+        srcDoc={html}
+        style={{ width: '100%', height: '100%', border: 'none', ...(style || {}) }}
+        title="Route Map"
+      />
+    );
+  }
+  const WebView = require('react-native-webview').WebView;
+  return <WebView source={{ html }} style={style} scrollEnabled={false} bounces={false} />;
 }
 
 export default function RoutesScreen() {
@@ -193,12 +184,9 @@ export default function RoutesScreen() {
           <>
             {result.origin.lat && (
               <View style={styles.mapCard}>
-                <WebView
-                  source={{ html: buildMapHtml(activeRoute || null, result.origin, result.destination) }}
-                  style={styles.mapWebView}
-                  scrollEnabled={false}
-                  bounces={false}
-                />
+                <View style={styles.mapWebView}>
+                  <MapView html={buildMapHtml(activeRoute || null, result.origin, result.destination)} />
+                </View>
                 <View style={styles.mapLabels}>
                   <Text style={styles.mapLabel}>📍 {result.origin.query}</Text>
                   <Text style={styles.mapLabel}>🏁 {result.destination.query}</Text>
