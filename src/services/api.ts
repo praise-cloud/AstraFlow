@@ -1,4 +1,5 @@
 import { getToken, clearToken } from './auth';
+import { setCache, getCache, removeCache } from './cache';
 
 export const API_BASE = 'http://localhost:8000/api';
 
@@ -28,11 +29,22 @@ async function request<T = any>(
   }
 
   const url = `${API_BASE}${path}`;
+  const method = (options.method ?? 'GET').toUpperCase();
+  const isRead = method === 'GET';
+
+  if (isRead) {
+    const cached = getCache<T>(path);
+    if (cached) return cached;
+  }
 
   let res: Response;
   try {
     res = await fetch(url, { ...options, headers });
   } catch {
+    if (isRead) {
+      const cached = getCache<T>(path, Infinity);
+      if (cached) return cached;
+    }
     throw new ApiError(0, 'Network error — unable to reach the server');
   }
 
@@ -46,7 +58,15 @@ async function request<T = any>(
     throw new ApiError(res.status, body.detail || 'Request failed');
   }
 
-  return res.json();
+  const data: T = await res.json();
+
+  if (isRead) {
+    setCache(path, data);
+  } else {
+    removeCache(path);
+  }
+
+  return data;
 }
 
 export const api = {
