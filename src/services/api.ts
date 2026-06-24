@@ -191,4 +191,17 @@ export const api = {
     preferences: () =>
       request<{ push_enabled: boolean; alerts_enabled: boolean }>('/notifications/preferences'),
   },
+
+  news: {
+    list: () =>
+      request<Array<{
+        id: number;
+        title: string;
+        summary: string;
+        content: string;
+        source: string;
+        image_url: string | null;
+        published_at: string;
+      }>>('/news'),
+  },
 };

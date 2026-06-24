@@ -65,6 +65,14 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.brandHero}>
+          <View style={styles.brandHeroIcon}>
+            <Text style={styles.brandHeroEmoji}>⛽</Text>
+          </View>
+          <Text style={styles.brandHeroTitle}>AstraFlow</Text>
+          <Text style={styles.brandHeroTagline}>Intelligent Fuel Insights</Text>
+        </View>
+
         <View style={styles.avatarSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
@@ -309,4 +317,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ba1a1a',
   },
+  brandHero: {
+    alignItems: 'center', gap: 8, paddingVertical: 24,
+    backgroundColor: '#f0f4fa', borderRadius: 16, marginBottom: 8,
+  },
+  brandHeroIcon: {
+    width: 64, height: 64, borderRadius: 32, backgroundColor: '#003087',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  brandHeroEmoji: { fontSize: 30 },
+  brandHeroTitle: { fontSize: 22, fontWeight: '700', color: '#003087' },
+  brandHeroTagline: { fontSize: 13, color: '#444652' },
 });

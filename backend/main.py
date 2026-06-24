@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.db.database import init_db
-from backend.routes import auth, dashboard, predict, prices, surveys, notifications
+from backend.routes import auth, dashboard, predict, prices, surveys, notifications, news
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ app.include_router(predict.router)
 app.include_router(prices.router)
 app.include_router(surveys.router)
 app.include_router(notifications.router)
+app.include_router(news.router)
 
 
 @app.get("/api/health")

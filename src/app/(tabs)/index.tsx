@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Animated, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
@@ -16,6 +16,16 @@ type DashboardData = {
   market_update: string;
   business_type: string;
   user_name: string;
+};
+
+type OilNews = {
+  id: number;
+  title: string;
+  summary: string;
+  content: string;
+  source: string;
+  image_url: string | null;
+  published_at: string;
 };
 
 const MOCK_DATA: DashboardData = {
@@ -81,6 +91,9 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [news, setNews] = useState<OilNews[]>([]);
+  const [selectedNews, setSelectedNews] = useState<OilNews | null>(null);
+  const [newsLoading, setNewsLoading] = useState(true);
 
   const fetchDashboard = useCallback(async () => {
     setError(null);
@@ -98,6 +111,20 @@ export default function HomeScreen() {
       setLoading(false);
     }
   }, [data]);
+
+  const fetchNews = useCallback(async () => {
+    try {
+      const articles = await api.news.list();
+      setNews(articles);
+    } catch {
+    } finally {
+      setNewsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNews();
+  }, [fetchNews]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -122,8 +149,10 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerIcon}>⛽</Text>
           <Text style={styles.headerTitle}>AstraFlow</Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>🇲🇺 Mauritius</Text>
+          </View>
         </View>
         <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
           <Text style={styles.profileIcon}>👤</Text>
@@ -245,9 +274,64 @@ export default function HomeScreen() {
                 </Text>
                 <Text style={styles.surveyCTA}>Take Survey →</Text>
               </TouchableOpacity>
+
+              <View style={styles.newsSection}>
+                <Text style={styles.newsSectionTitle}>Oil & Fuel Market — Mauritius</Text>
+                {newsLoading ? (
+                  <View style={{ gap: 12 }}>
+                    <SkeletonBlock height={60} />
+                    <SkeletonBlock height={60} />
+                  </View>
+                ) : news.length === 0 ? (
+                  <Text style={styles.newsEmpty}>No news articles available</Text>
+                ) : (
+                  <View style={{ gap: 12 }}>
+                    {news.map(article => (
+                      <TouchableOpacity
+                        key={article.id}
+                        style={styles.newsCard}
+                        onPress={() => setSelectedNews(article)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.newsTitle}>{article.title}</Text>
+                        <Text style={styles.newsSummary} numberOfLines={2}>{article.summary}</Text>
+                        <View style={styles.newsMeta}>
+                          <Text style={styles.newsSource}>{article.source}</Text>
+                          <Text style={styles.newsDate}>{article.published_at}</Text>
+                        </View>
+                        <Text style={styles.newsRead}>Read →</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
             </>
           )}
         </ScrollView>
+
+        <Modal
+          visible={selectedNews !== null}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setSelectedNews(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalSource}>{selectedNews?.source}</Text>
+                <TouchableOpacity onPress={() => setSelectedNews(null)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.modalBody}>
+                <Text style={styles.modalTitle}>{selectedNews?.title}</Text>
+                <Text style={styles.modalDate}>{selectedNews?.published_at}</Text>
+                <View style={styles.modalDivider} />
+                <Text style={styles.modalContent}>{selectedNews?.content}</Text>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
   );
 }
@@ -330,4 +414,45 @@ const styles = StyleSheet.create({
   surveyTitle: { fontSize: 18, fontWeight: '700', color: '#1a1c1e' },
   surveyText: { fontSize: 14, color: '#444652', lineHeight: 20 },
   surveyCTA: { fontSize: 14, fontWeight: '600', color: '#003087', marginTop: 4 },
+  badge: {
+    backgroundColor: '#dbe1ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
+    marginLeft: 8,
+  },
+  badgeText: { fontSize: 11, fontWeight: '600', color: '#003087' },
+  newsSection: {
+    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
+    padding: 16, gap: 12,
+  },
+  newsSectionTitle: {
+    fontSize: 14, fontWeight: '700', color: '#1a1c1e', textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  newsEmpty: { fontSize: 14, color: '#747683', textAlign: 'center', paddingVertical: 16 },
+  newsCard: {
+    backgroundColor: '#f9f9fc', borderRadius: 8, borderWidth: 1, borderColor: '#f0f0f3',
+    padding: 12, gap: 4,
+  },
+  newsTitle: { fontSize: 14, fontWeight: '700', color: '#1a1c1e', lineHeight: 18 },
+  newsSummary: { fontSize: 13, color: '#444652', lineHeight: 17 },
+  newsMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
+  newsSource: { fontSize: 11, fontWeight: '600', color: '#003087' },
+  newsDate: { fontSize: 11, color: '#747683' },
+  newsRead: { fontSize: 13, fontWeight: '600', color: '#003087', marginTop: 4 },
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: '#ffffff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    maxHeight: '85%', paddingTop: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f3f6',
+  },
+  modalSource: { fontSize: 13, fontWeight: '600', color: '#003087' },
+  modalClose: { fontSize: 20, color: '#747683', padding: 4 },
+  modalBody: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32 },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: '#1a1c1e', lineHeight: 26, marginBottom: 8 },
+  modalDate: { fontSize: 12, color: '#747683', marginBottom: 12 },
+  modalDivider: { height: 1, backgroundColor: '#f3f3f6', marginBottom: 16 },
+  modalContent: { fontSize: 15, color: '#1a1c1e', lineHeight: 24 },
 });
