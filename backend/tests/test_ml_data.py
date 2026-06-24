@@ -34,7 +34,7 @@ class TestPrepareFeatures:
     def test_returns_correct_shapes(self):
         data = generate_training_data(days=50, seed_val=42)
         X, y, timestamps = prepare_features(data, "petrol")
-        assert X.shape == (50, 4)
+        assert X.shape == (50, 6)
         assert y.shape == (50,)
         assert timestamps.shape == (50,)
 
@@ -47,6 +47,8 @@ class TestPrepareFeatures:
         assert all(-1 <= v <= 1 for v in X[:, 1])
         assert all(-1 <= v <= 1 for v in X[:, 2])
         assert all(-1 <= v <= 1 for v in X[:, 3])
+        assert X[0, 4] == 0
+        assert X[0, 5] == 0
 
     def test_diesel_separate_from_petrol(self):
         data = generate_training_data(days=10, seed_val=42)
