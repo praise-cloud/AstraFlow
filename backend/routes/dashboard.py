@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from backend.db.database import get_db
 from backend.models.user import User, BusinessType
 from backend.services.auth import decode_access_token
+from backend.ml.forecast import get_forecaster
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 
@@ -54,6 +55,11 @@ def get_dashboard(user: User = Depends(get_current_user)):
     biz_type = user.business_type
     info = RECOMMENDATIONS.get(biz_type, RECOMMENDATIONS[BusinessType.RESTAURANT])
 
+    forecaster = get_forecaster()
+    forecast_data = forecaster.forecast(days=7, fuel_type="petrol")
+    evaluation = forecast_data.get("evaluation", {"mae": 0, "rmse": 0, "r2": 0})
+    model_name = forecast_data.get("model", "Linear Regression (numpy)")
+
     return {
         "current_price": {
             "petrol": 1.64,
@@ -76,4 +82,6 @@ def get_dashboard(user: User = Depends(get_current_user)):
         "market_update": "Global crude supply fluctuations are driving local price hikes.",
         "business_type": biz_type.value,
         "user_name": user.full_name,
+        "model": model_name,
+        "evaluation": evaluation,
     }

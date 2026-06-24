@@ -1,7 +1,7 @@
 from datetime import datetime, timezone, timedelta
 import numpy as np
 
-from backend.ml.data import generate_training_data, prepare_features
+from backend.ml.data import generate_training_data, prepare_features, load_training_data_from_db
 from backend.ml.models import EnsembleForecaster
 
 
@@ -14,7 +14,11 @@ class FuelForecaster:
         self._trained = False
 
     def train(self, history: list[dict] | None = None) -> None:
-        data = history or generate_training_data(365)
+        data = history
+        if data is None:
+            data = load_training_data_from_db(365)
+        if not data or len(data) < 14:
+            data = generate_training_data(365)
 
         X_p, y_p, _ = prepare_features(data, "petrol")
         X_d, y_d, _ = prepare_features(data, "diesel")
@@ -33,18 +37,25 @@ class FuelForecaster:
             self.train(history)
 
         model = self._petrol_model if fuel_type == "petrol" else self._diesel_model
-        X_train, y_train, timestamps = prepare_features(
-            history or generate_training_data(365), fuel_type
-        )
 
+        data = history
+        if data is None:
+            data = load_training_data_from_db(365)
+        if not data or len(data) < 14:
+            data = generate_training_data(365)
+        X_train, y_train, timestamps = prepare_features(data, fuel_type)
+
+        n_features = X_train.shape[1]
         n = len(X_train)
-        X_future = np.zeros((days, 4), dtype=np.float64)
+        X_future = np.zeros((days, n_features), dtype=np.float64)
         for i in range(days):
             idx = n + i
             X_future[i, 0] = idx
             X_future[i, 1] = np.sin(2 * np.pi * idx / 7)
             X_future[i, 2] = np.cos(2 * np.pi * idx / 7)
             X_future[i, 3] = np.sin(2 * np.pi * idx / 365)
+            X_future[i, 4] = 0.0
+            X_future[i, 5] = 0.0
 
         preds, lower, upper = model.predict_with_ci(X_future, y_train, X_hist=X_train)
         preds = np.maximum(preds, 0.5)
@@ -70,7 +81,16 @@ class FuelForecaster:
 
         trend = "up" if pct_change > 1 else "down" if pct_change < -1 else "stable"
 
+        evaluation = model.evaluate(X_train, y_train)
+        feature_imp = model.feature_importance()
         recommendation = self._generate_recommendation(trend, pct_change, avg_pred, current_price)
+
+        model_parts = ["Linear"]
+        if model.rf.available:
+            model_parts.append("RandomForest")
+        if model.tree.available:
+            model_parts.append("XGBoost")
+        model_name = " + ".join(model_parts) + " Ensemble" if len(model_parts) > 1 else f"{model_parts[0]} (numpy)"
 
         return {
             "fuel_type": fuel_type,
@@ -87,7 +107,9 @@ class FuelForecaster:
             },
             "points": points,
             "recommendation": recommendation,
-            "model": "XGBoost + Linear Ensemble" if model.tree.available else "Linear Regression (numpy)",
+            "model": model_name,
+            "evaluation": evaluation,
+            "feature_importance": feature_imp,
         }
 
     def _generate_recommendation(
