@@ -1,5 +1,6 @@
 import { api, ApiError, API_BASE } from '../services/api';
 import { getToken, clearToken, setToken } from '../services/auth';
+import { clearCache } from '../services/cache';
 
 jest.mock('../services/auth', () => ({
   getToken: jest.fn(),
@@ -21,6 +22,7 @@ function mockResponse(status: number, body: unknown) {
 describe('api client', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    clearCache();
   });
 
   describe('request handling', () => {
