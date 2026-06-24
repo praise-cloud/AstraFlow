@@ -35,8 +35,7 @@ export default function RegisterScreen() {
         full_name: fullName,
         business_type: businessType,
       });
-      setToken(res.token);
-      setUser(res.user);
+      await Promise.all([setToken(res.token), setUser(res.user)]);
       router.replace('/');
     } catch (err: any) {
       Alert.alert('Registration Failed', err.detail || err.message);

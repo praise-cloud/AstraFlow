@@ -15,17 +15,21 @@ function useProtectedRoute() {
 
   useEffect(() => {
     if (checked) return;
-    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
+    const check = async () => {
+      const authenticated = await Promise.resolve(isAuthenticated());
+      const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
 
-    if (!isAuthenticated() && !inAuthGroup) {
-      router.replace('/login');
-    } else if (isAuthenticated() && inAuthGroup) {
-      router.replace('/');
-    }
-    if (isAuthenticated()) {
-      registerForPushNotifications();
-    }
-    setChecked(true);
+      if (!authenticated && !inAuthGroup) {
+        router.replace('/login');
+      } else if (authenticated && inAuthGroup) {
+        router.replace('/');
+      }
+      if (authenticated) {
+        registerForPushNotifications();
+      }
+      setChecked(true);
+    };
+    check();
   }, [segments, checked, router]);
 
   return checked;

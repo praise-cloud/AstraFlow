@@ -24,8 +24,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const res = await api.auth.login({ email: email.trim(), password });
-      setToken(res.token);
-      setUser(res.user);
+      await Promise.all([setToken(res.token), setUser(res.user)]);
       router.replace('/');
     } catch (err: any) {
       Alert.alert('Login Failed', err.detail || err.message || 'Unable to sign in');

@@ -1,4 +1,4 @@
-import { getToken, clearToken } from './auth';
+import { getTokenAsync, clearToken } from './auth';
 
 export const API_BASE = 'http://localhost:8000/api';
 
@@ -17,7 +17,7 @@ async function request<T = any>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getToken();
+  const token = await getTokenAsync();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -37,7 +37,7 @@ async function request<T = any>(
   }
 
   if (res.status === 401) {
-    clearToken();
+    await clearToken();
     throw new ApiError(401, 'Session expired. Please log in again.');
   }
 

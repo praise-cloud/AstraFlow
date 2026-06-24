@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, Switch } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
-import { getUser, clearToken } from '@/services/auth';
+import { getUserAsync, clearToken } from '@/services/auth';
 import { api } from '@/services/api';
 import { registerForPushNotifications, unregisterPushNotifications } from '@/services/notifications';
 
@@ -16,11 +16,12 @@ const BUSINESS_LABELS: Record<string, string> = {
 };
 
 export default function ProfileScreen() {
-  const [user] = useState(() => getUser());
+  const [user, setUser] = useState<{ id: string; email: string; full_name: string; business_type: string } | null>(null);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [toggling, setToggling] = useState(false);
 
   useEffect(() => {
+    getUserAsync().then(setUser);
     api.notifications.preferences().then(prefs => setPushEnabled(prefs.push_enabled)).catch(() => {});
   }, []);
 
@@ -46,8 +47,8 @@ export default function ProfileScreen() {
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: () => {
-          clearToken();
+        onPress: async () => {
+          await clearToken();
           router.replace('/login');
         },
       },
