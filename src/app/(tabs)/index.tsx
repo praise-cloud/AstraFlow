@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, Modal } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Animated, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
-import { api } from '@/services/api';
+import { api, ApiError } from '@/services/api';
 import { getUser } from '@/services/auth';
 import { Sparkline } from '@/components/Sparkline';
 
@@ -62,14 +62,42 @@ const IMPACT_COLORS: Record<string, string> = {
   Low: '#2e7d32', Medium: '#f57c00', High: '#d32f2f',
 };
 
-function makeSparkline(current: number, trend: string, change: number): number[] {
+function makeSparklineSmooth(current: number, trend: string, change: number, points: number = 14): number[] {
   const arr: number[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const pct = i / 6;
+  for (let i = points; i >= 0; i--) {
+    const pct = i / points;
     const trendVal = trend === 'up' ? change / 100 : -change / 100;
-    arr.push(parseFloat((current - current * trendVal * pct + (Math.random() - 0.5) * 0.01).toFixed(3)));
+    const noise = (Math.random() - 0.5) * 0.008;
+    arr.push(parseFloat((current - current * trendVal * pct * pct + noise).toFixed(3)));
   }
   return arr;
+}
+
+function SkeletonBlock({ width, height, style }: { width?: number | string; height: number; style?: any }) {
+  return (
+    <View style={[{ width: width ?? '100%', height, backgroundColor: '#e2e2e5', borderRadius: 8 }, style]} />
+  );
+}
+
+function SkeletonDashboard() {
+  return (
+    <View style={styles.scrollContent}>
+      <View style={[styles.heroCard, { gap: 8 }]}>
+        <SkeletonBlock width={100} height={12} />
+        <SkeletonBlock width="70%" height={28} />
+        <SkeletonBlock width="85%" height={14} />
+      </View>
+      <View style={styles.priceGrid}>
+        <View style={styles.priceCard}><SkeletonBlock height={16} /><SkeletonBlock width="60%" height={24} /></View>
+        <View style={styles.priceCard}><SkeletonBlock height={16} /><SkeletonBlock width="60%" height={24} /></View>
+      </View>
+      <View style={styles.insightCard}><SkeletonBlock height={40} width={40} style={{ borderRadius: 8 }} /><View style={{ flex: 1, gap: 4 }}><SkeletonBlock width="40%" height={14} /><SkeletonBlock height={12} /></View></View>
+      <View style={styles.metricsRow}>
+        <View style={styles.metricCard}><SkeletonBlock width="60%" height={14} /><SkeletonBlock width="40%" height={24} /></View>
+        <View style={styles.metricCard}><SkeletonBlock width="60%" height={14} /><SkeletonBlock width="40%" height={24} /></View>
+      </View>
+    </View>
+  );
 }
 
 export default function HomeScreen() {
@@ -151,16 +179,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {loading && !data ? (
-          <View style={styles.scrollContent}>
-            <View style={[styles.bannerCard, { gap: 6 }]}>
-              <View style={{ width: 80, height: 10, backgroundColor: '#e2e2e5', borderRadius: 4 }} />
-              <View style={{ width: '60%', height: 18, backgroundColor: '#e2e2e5', borderRadius: 4 }} />
-            </View>
-            <View style={styles.priceGrid}>
-              <View style={styles.priceCard}><View style={{ height: 14, width: '50%', backgroundColor: '#e2e2e5', borderRadius: 4 }} /><View style={{ height: 22, width: '70%', backgroundColor: '#e2e2e5', borderRadius: 4, marginTop: 6 }} /></View>
-              <View style={styles.priceCard}><View style={{ height: 14, width: '50%', backgroundColor: '#e2e2e5', borderRadius: 4 }} /><View style={{ height: 22, width: '70%', backgroundColor: '#e2e2e5', borderRadius: 4, marginTop: 6 }} /></View>
-            </View>
-          </View>
+          <SkeletonDashboard />
         ) : (
           <>
             {error && (
@@ -170,17 +189,15 @@ export default function HomeScreen() {
               </TouchableOpacity>
             )}
 
-            <View style={styles.bannerCard}>
-              <View style={styles.bannerAccent} />
-              <View style={styles.bannerContent}>
-                <Text style={styles.bannerLabel}>Recommendation</Text>
-                <Text style={styles.bannerTitle}>{data!.recommendation.title}</Text>
-                <Text style={styles.bannerText}>{data!.recommendation.content}</Text>
-              </View>
+            <View style={styles.heroCard}>
+              <View style={styles.heroBg} />
+              <Text style={styles.heroLabel}>Recommendation</Text>
+              <Text style={styles.heroTitle}>{data!.recommendation.title}</Text>
+              <Text style={styles.heroText}>{data!.recommendation.content}</Text>
             </View>
 
             <View style={styles.priceGrid}>
-              <View style={styles.priceCard}>
+              <View style={[styles.priceCard, { borderTopColor: '#003087', borderTopWidth: 3 }]}>
                 <View style={styles.priceHeader}>
                   <Text style={styles.priceLabel}>Petrol</Text>
                   <View style={styles.trendRow}>
@@ -188,26 +205,29 @@ export default function HomeScreen() {
                       {data!.trend.petrol === 'up' ? '↑' : '↓'}
                     </Text>
                     <Text style={data!.trend.petrol === 'up' ? styles.trendUpText : styles.trendDownText}>
-                      {data!.trend.petrol_change}
+                      {data!.trend.petrol_change}%
                     </Text>
                   </View>
                 </View>
                 <View style={styles.priceBody}>
-                  <Text style={styles.priceValue}>
-                    Rs {data!.current_price.petrol.toFixed(2)}
-                    <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
-                  </Text>
+                  <View>
+                    <Text style={styles.priceValue}>
+                      Rs {data!.current_price.petrol.toFixed(2)}
+                      <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
+                    </Text>
+                    <Text style={styles.priceSub}>per litre</Text>
+                  </View>
                   <Sparkline
-                    data={makeSparkline(data!.current_price.petrol, data!.trend.petrol, data!.trend.petrol_change)}
+                    data={makeSparklineSmooth(data!.current_price.petrol, data!.trend.petrol, data!.trend.petrol_change)}
+                    width={90}
+                    height={36}
                     color="#003087"
+                    strokeWidth={2}
                   />
-                </View>
-                <View style={styles.badgeLow}>
-                  <Text style={styles.badgeLowText}>Lowest 7-day</Text>
                 </View>
               </View>
 
-              <View style={styles.priceCard}>
+              <View style={[styles.priceCard, { borderTopColor: '#d32f2f', borderTopWidth: 3 }]}>
                 <View style={styles.priceHeader}>
                   <Text style={styles.priceLabel}>Diesel</Text>
                   <View style={styles.trendRow}>
@@ -215,22 +235,25 @@ export default function HomeScreen() {
                       {data!.trend.diesel === 'up' ? '↑' : '↓'}
                     </Text>
                     <Text style={data!.trend.diesel === 'up' ? styles.trendUpText : styles.trendDownText}>
-                      {data!.trend.diesel_change}
+                      {data!.trend.diesel_change}%
                     </Text>
                   </View>
                 </View>
                 <View style={styles.priceBody}>
-                  <Text style={styles.priceValue}>
-                    Rs {data!.current_price.diesel.toFixed(2)}
-                    <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
-                  </Text>
+                  <View>
+                    <Text style={styles.priceValue}>
+                      Rs {data!.current_price.diesel.toFixed(2)}
+                      <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
+                    </Text>
+                    <Text style={styles.priceSub}>per litre</Text>
+                  </View>
                   <Sparkline
-                    data={makeSparkline(data!.current_price.diesel, data!.trend.diesel, data!.trend.diesel_change)}
+                    data={makeSparklineSmooth(data!.current_price.diesel, data!.trend.diesel, data!.trend.diesel_change)}
+                    width={90}
+                    height={36}
                     color="#d32f2f"
+                    strokeWidth={2}
                   />
-                </View>
-                <View style={styles.badgeRising}>
-                  <Text style={styles.badgeRisingText}>Rising</Text>
                 </View>
               </View>
             </View>
@@ -284,8 +307,8 @@ export default function HomeScreen() {
                 <Text style={styles.newsSectionTitle}>Oil & Fuel Market — Mauritius</Text>
                 {newsLoading ? (
                   <View style={{ gap: 12 }}>
-                    <View style={{ height: 60, backgroundColor: '#e2e2e5', borderRadius: 8 }} />
-                    <View style={{ height: 60, backgroundColor: '#e2e2e5', borderRadius: 8 }} />
+                    <SkeletonBlock height={60} />
+                    <SkeletonBlock height={60} />
                   </View>
                 ) : news.length === 0 ? (
                   <Text style={styles.newsEmpty}>No news articles available</Text>
@@ -353,22 +376,24 @@ const styles = StyleSheet.create({
   profileBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   profileIcon: { fontSize: 22 },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 32, gap: 20 },
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 32, gap: 24 },
   errorBanner: {
     backgroundColor: '#ffdad6', padding: 12, borderRadius: 8,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
   errorText: { fontSize: 13, color: '#93000a', flex: 1 },
   retryText: { fontSize: 12, fontWeight: '600', color: '#ba1a1a', marginLeft: 8 },
-  bannerCard: {
-    backgroundColor: '#e8edf5', borderRadius: 10, flexDirection: 'row',
-    overflow: 'hidden', borderWidth: 1, borderColor: '#cdd7e6',
+  heroCard: {
+    backgroundColor: '#f0f4fa', borderRadius: 12, padding: 24,
+    position: 'relative', overflow: 'hidden',
   },
-  bannerAccent: { width: 5, backgroundColor: '#003087' },
-  bannerContent: { flex: 1, padding: 14, gap: 4 },
-  bannerLabel: { fontSize: 10, fontWeight: '700', color: '#003087', textTransform: 'uppercase', letterSpacing: 1 },
-  bannerTitle: { fontSize: 15, fontWeight: '700', color: '#1a1c1e' },
-  bannerText: { fontSize: 13, color: '#444652', lineHeight: 18 },
+  heroBg: {
+    position: 'absolute', right: -32, top: -32, width: 120, height: 120,
+    borderRadius: 60, backgroundColor: 'rgba(0,48,135,0.05)',
+  },
+  heroLabel: { fontSize: 12, fontWeight: '600', color: '#1c4197', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
+  heroTitle: { fontSize: 26, fontWeight: '700', color: '#003087', lineHeight: 32, marginBottom: 8 },
+  heroText: { fontSize: 14, color: '#444652', lineHeight: 20, maxWidth: '85%' },
   priceGrid: { flexDirection: 'row', gap: 12 },
   priceCard: {
     flex: 1, backgroundColor: '#ffffff', borderRadius: 12,
@@ -384,10 +409,7 @@ const styles = StyleSheet.create({
   trendUpText: { fontSize: 12, color: '#d32f2f' },
   priceValue: { fontSize: 24, fontWeight: '700', color: '#1a1c1e' },
   priceUnit: { fontSize: 12, fontWeight: '400', color: '#747683' },
-  badgeLow: { alignSelf: 'flex-start', backgroundColor: 'rgba(219,225,255,0.3)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  badgeLowText: { fontSize: 10, fontWeight: '600', color: '#003087', textTransform: 'uppercase' },
-  badgeRising: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,218,214,0.4)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  badgeRisingText: { fontSize: 10, fontWeight: '600', color: '#d32f2f', textTransform: 'uppercase' },
+  priceSub: { fontSize: 10, color: '#747683', marginTop: -2 },
   insightCard: {
     backgroundColor: '#f3f3f6', borderRadius: 8, padding: 16,
     flexDirection: 'row', gap: 16, borderWidth: 1, borderColor: 'rgba(196,198,212,0.3)',
