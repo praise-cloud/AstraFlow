@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Animated, Modal, TextInput } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Animated, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
@@ -58,12 +58,17 @@ const MOCK_DATA: DashboardData = {
 const RISK_COLORS: Record<string, string> = {
   Low: '#2e7d32', Moderate: '#f57c00', High: '#d32f2f',
 };
-const IMPACT_COLORS: Record<string, string> = {
-  Low: '#2e7d32', Medium: '#f57c00', High: '#d32f2f',
-};
 
-function formatDate(d: Date): string {
-  return d.toLocaleDateString('en-MU', { month: 'short', day: 'numeric', year: 'numeric' });
+function calcRiskPercent(risk: string, trend: string): number {
+  const base = risk === 'Low' ? 15 : risk === 'Moderate' ? 45 : 75;
+  const trendBoost = trend === 'up' ? 12 : trend === 'down' ? -8 : 0;
+  return Math.min(100, Math.max(0, base + trendBoost));
+}
+
+function calcImpactPercent(impact: string, change: number): number {
+  const base = impact === 'Low' ? 10 : impact === 'Medium' ? 35 : 65;
+  const changeBoost = change * 2;
+  return Math.min(100, Math.max(0, base + changeBoost));
 }
 
 function makeSparkline(current: number, trend: string, change: number): number[] {
@@ -119,12 +124,6 @@ export default function HomeScreen() {
   const [news, setNews] = useState<OilNews[]>([]);
   const [selectedNews, setSelectedNews] = useState<OilNews | null>(null);
   const [newsLoading, setNewsLoading] = useState(true);
-
-  const [fuelLiters, setFuelLiters] = useState('45');
-  const [lastRefill, setLastRefill] = useState<Date | null>(null);
-  const [kmDriven, setKmDriven] = useState('0');
-  const [showRefillModal, setShowRefillModal] = useState(false);
-  const [refillAmount, setRefillAmount] = useState('');
 
   const fetchDashboard = useCallback(async () => {
     setError(null);
@@ -279,54 +278,26 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={styles.fuelUsageCard}>
-              <View style={styles.fuelUsageHeader}>
-                <Text style={styles.fuelUsageTitle}>Your Fuel Usage</Text>
-                <TouchableOpacity style={styles.refillBtn} onPress={() => setShowRefillModal(true)}>
-                  <Text style={styles.refillBtnText}>+ Refill</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.fuelUsageGrid}>
-                <View style={styles.fuelUsageItem}>
-                  <Text style={styles.fuelUsageLabel}>Daily usage</Text>
-                  <Text style={styles.fuelUsageValue}>{fuelLiters} L</Text>
-                </View>
-                <View style={styles.fuelUsageItem}>
-                  <Text style={styles.fuelUsageLabel}>Est. driven</Text>
-                  <Text style={styles.fuelUsageValue}>{kmDriven || 30} km/day</Text>
-                </View>
-                <View style={styles.fuelUsageItem}>
-                  <Text style={styles.fuelUsageLabel}>Last refill</Text>
-                  <Text style={styles.fuelUsageValue}>{lastRefill ? formatDate(lastRefill) : '—'}</Text>
-                </View>
-              </View>
-              <View style={styles.fuelUsageRow}>
-                <Text style={styles.fuelUsageHint}>Daily consumption</Text>
-                <View style={styles.fuelInputRow}>
-                  <TextInput
-                    style={styles.fuelInput}
-                    value={fuelLiters}
-                    onChangeText={setFuelLiters}
-                    keyboardType="numeric"
-                    placeholder="45"
-                  />
-                  <Text style={styles.fuelInputUnit}>L</Text>
-                </View>
-              </View>
-            </View>
-
               <View style={styles.metricsRow}>
                 <View style={styles.metricCard}>
                   <Text style={styles.metricLabel}>Fuel Risk</Text>
+                  <View style={styles.metricBarTrack}>
+                    <View style={[styles.metricBarFill, { width: `${calcRiskPercent(data!.risk_level, data!.trend.petrol)}%`, backgroundColor: RISK_COLORS[data!.risk_level] || '#f57c00' }]} />
+                  </View>
                   <Text style={[styles.metricValue, { color: RISK_COLORS[data!.risk_level] || '#f57c00' }]}>
-                    {data!.risk_level}
+                    {data!.risk_level} · {calcRiskPercent(data!.risk_level, data!.trend.petrol).toFixed(0)}%
                   </Text>
+                  <Text style={styles.metricSub}></Text>
                 </View>
                 <View style={styles.metricCard}>
                   <Text style={styles.metricLabel}>Business Impact</Text>
-                  <Text style={[styles.metricValue, { color: IMPACT_COLORS[data!.impact_score] || '#f57c00' }]}>
-                    {data!.impact_score}
+                  <View style={styles.metricBarTrack}>
+                    <View style={[styles.metricBarFill, { width: `${calcImpactPercent(data!.impact_score, data!.trend.petrol_change)}%`, backgroundColor: RISK_COLORS[calcImpactPercent(data!.impact_score, data!.trend.petrol_change) > 50 ? 'High' : calcImpactPercent(data!.impact_score, data!.trend.petrol_change) > 25 ? 'Moderate' : 'Low'] || '#f57c00' }]} />
+                  </View>
+                  <Text style={[styles.metricValue, { color: RISK_COLORS[calcImpactPercent(data!.impact_score, data!.trend.petrol_change) > 50 ? 'High' : calcImpactPercent(data!.impact_score, data!.trend.petrol_change) > 25 ? 'Moderate' : 'Low'] || '#f57c00' }]}>
+                    {data!.impact_score} · {calcImpactPercent(data!.impact_score, data!.trend.petrol_change).toFixed(0)}%
                   </Text>
+                  <Text style={styles.metricSub}></Text>
                 </View>
               </View>
 
@@ -383,42 +354,6 @@ export default function HomeScreen() {
             </>
           )}
         </ScrollView>
-
-        <Modal visible={showRefillModal} transparent animationType="slide" onRequestClose={() => setShowRefillModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Log Refill</Text>
-                <TouchableOpacity onPress={() => setShowRefillModal(false)}>
-                  <Text style={styles.modalClose}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.modalBody}>
-                <Text style={styles.refillLabel}>Liters refilled</Text>
-                <TextInput
-                  style={styles.refillInput}
-                  value={refillAmount}
-                  onChangeText={setRefillAmount}
-                  keyboardType="numeric"
-                  placeholder="e.g. 45"
-                  autoFocus
-                />
-                <TouchableOpacity
-                  style={[styles.refillSubmit, !refillAmount && { opacity: 0.5 }]}
-                  disabled={!refillAmount}
-                  onPress={() => {
-                    setFuelLiters(refillAmount);
-                    setLastRefill(new Date());
-                    setShowRefillModal(false);
-                    setRefillAmount('');
-                  }}
-                >
-                  <Text style={styles.refillSubmitText}>Log Refill</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
 
         <Modal
           visible={selectedNews !== null}
@@ -496,36 +431,6 @@ const styles = StyleSheet.create({
   badgeLowText: { fontSize: 10, fontWeight: '600', color: '#003087', textTransform: 'uppercase' },
   badgeRising: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,218,214,0.4)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
   badgeRisingText: { fontSize: 10, fontWeight: '600', color: '#d32f2f', textTransform: 'uppercase' },
-  fuelUsageCard: {
-    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
-    padding: 16, gap: 12,
-  },
-  fuelUsageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fuelUsageTitle: { fontSize: 14, fontWeight: '700', color: '#1a1c1e' },
-  refillBtn: { backgroundColor: '#003087', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  refillBtnText: { fontSize: 12, fontWeight: '600', color: '#ffffff' },
-  fuelUsageGrid: { flexDirection: 'row', gap: 8 },
-  fuelUsageItem: { flex: 1, alignItems: 'center', gap: 2 },
-  fuelUsageLabel: { fontSize: 9, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
-  fuelUsageValue: { fontSize: 14, fontWeight: '700', color: '#1a1c1e' },
-  fuelUsageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fuelUsageHint: { fontSize: 12, color: '#747683' },
-  fuelInputRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  fuelInput: {
-    width: 60, height: 32, borderWidth: 1, borderColor: '#c4c6d4', borderRadius: 6,
-    paddingHorizontal: 8, fontSize: 14, color: '#1a1c1e', textAlign: 'center',
-  },
-  fuelInputUnit: { fontSize: 12, color: '#747683' },
-  refillLabel: { fontSize: 14, fontWeight: '600', color: '#444652' },
-  refillInput: {
-    height: 48, borderWidth: 1, borderColor: '#c4c6d4', borderRadius: 8,
-    paddingHorizontal: 16, fontSize: 16, backgroundColor: '#f9f9fc', color: '#1a1c1e',
-  },
-  refillSubmit: {
-    height: 48, backgroundColor: '#003087', borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  refillSubmitText: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
   insightCard: {
     backgroundColor: '#f3f3f6', borderRadius: 8, padding: 16,
     flexDirection: 'row', gap: 16, borderWidth: 1, borderColor: 'rgba(196,198,212,0.3)',
@@ -541,7 +446,10 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#dee5ef', padding: 16, alignItems: 'center', gap: 4,
   },
   metricLabel: { fontSize: 12, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
-  metricValue: { fontSize: 20, fontWeight: '700' },
+  metricBarTrack: { height: 6, backgroundColor: '#e2e2e5', borderRadius: 3, overflow: 'hidden' },
+  metricBarFill: { height: '100%', borderRadius: 3 },
+  metricValue: { fontSize: 16, fontWeight: '700' },
+  metricSub: { fontSize: 10, color: '#747683' },
 
   badge: {
     backgroundColor: '#dbe1ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
