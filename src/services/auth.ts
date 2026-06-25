@@ -1,6 +1,9 @@
 const TOKEN_KEY = 'astraflow_token';
 const USER_KEY = 'astraflow_user';
 
+let _inMemoryToken: string | null = null;
+let _inMemoryUser: object | null = null;
+
 function isWeb(): boolean {
   try {
     return require('react-native').Platform.OS === 'web';
@@ -97,10 +100,12 @@ async function isAuthenticatedNative(): Promise<boolean> {
 }
 
 export function getToken(): string | null {
-  return isWeb() ? lsGet(TOKEN_KEY) : null;
+  if (isWeb()) return lsGet(TOKEN_KEY);
+  return _inMemoryToken;
 }
 
 export async function setToken(token: string): Promise<void> {
+  _inMemoryToken = token;
   if (isWeb()) {
     lsSet(TOKEN_KEY, token);
   } else {
@@ -109,6 +114,8 @@ export async function setToken(token: string): Promise<void> {
 }
 
 export async function clearToken(): Promise<void> {
+  _inMemoryToken = null;
+  _inMemoryUser = null;
   if (isWeb()) {
     lsRemove(TOKEN_KEY);
     lsRemove(USER_KEY);
@@ -118,10 +125,12 @@ export async function clearToken(): Promise<void> {
 }
 
 export function getUser(): { id: string; email: string; full_name: string; business_type: string } | null {
-  return isWeb() ? lsGetObject(USER_KEY) : null;
+  if (isWeb()) return lsGetObject(USER_KEY);
+  return _inMemoryUser as any;
 }
 
 export async function setUser(user: object): Promise<void> {
+  _inMemoryUser = user;
   if (isWeb()) {
     lsSetObject(USER_KEY, user);
   } else {
@@ -130,13 +139,19 @@ export async function setUser(user: object): Promise<void> {
 }
 
 export function isAuthenticated(): boolean | Promise<boolean> {
-  return isWeb() ? lsGet(TOKEN_KEY) !== null : isAuthenticatedNative();
+  if (isWeb()) return lsGet(TOKEN_KEY) !== null;
+  if (_inMemoryToken) return true;
+  return isAuthenticatedNative();
 }
 
 export async function getTokenAsync(): Promise<string | null> {
-  return isWeb() ? Promise.resolve(lsGet(TOKEN_KEY)) : getTokenNative();
+  if (isWeb()) return Promise.resolve(lsGet(TOKEN_KEY));
+  if (_inMemoryToken) return _inMemoryToken;
+  return getTokenNative();
 }
 
 export async function getUserAsync(): Promise<{ id: string; email: string; full_name: string; business_type: string } | null> {
-  return isWeb() ? Promise.resolve(lsGetObject(USER_KEY)) : getUserNative();
+  if (isWeb()) return Promise.resolve(lsGetObject(USER_KEY));
+  if (_inMemoryUser) return _inMemoryUser as any;
+  return getUserNative();
 }
