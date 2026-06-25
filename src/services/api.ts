@@ -14,7 +14,7 @@ function getDevApiBase(): string {
     : 'http://localhost:8000/api';
 }
 
-export const API_BASE = __DEV__ ? getDevApiBase() : 'https://astraflow-api.onrender.com/api';
+export const API_BASE = __DEV__ ? getDevApiBase() : 'https://astraflow-api-dryi.onrender.com/api';
 
 export class ApiError extends Error {
   status: number;
