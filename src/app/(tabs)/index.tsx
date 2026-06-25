@@ -58,17 +58,13 @@ const MOCK_DATA: DashboardData = {
 const RISK_COLORS: Record<string, string> = {
   Low: '#2e7d32', Moderate: '#f57c00', High: '#d32f2f',
 };
+const IMPACT_COLORS: Record<string, string> = {
+  Low: '#2e7d32', Medium: '#f57c00', High: '#d32f2f',
+};
 
-function calcRiskPercent(risk: string, trend: string): number {
-  const base = risk === 'Low' ? 15 : risk === 'Moderate' ? 45 : 75;
-  const trendBoost = trend === 'up' ? 12 : trend === 'down' ? -8 : 0;
-  return Math.min(100, Math.max(0, base + trendBoost));
-}
-
-function calcImpactPercent(impact: string, change: number): number {
-  const base = impact === 'Low' ? 10 : impact === 'Medium' ? 35 : 65;
-  const changeBoost = change * 2;
-  return Math.min(100, Math.max(0, base + changeBoost));
+function formatDate(d: string | Date): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return date.toLocaleDateString('en-MU', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function makeSparkline(current: number, trend: string, change: number): number[] {
@@ -281,23 +277,15 @@ export default function HomeScreen() {
               <View style={styles.metricsRow}>
                 <View style={styles.metricCard}>
                   <Text style={styles.metricLabel}>Fuel Risk</Text>
-                  <View style={styles.metricBarTrack}>
-                    <View style={[styles.metricBarFill, { width: `${calcRiskPercent(data!.risk_level, data!.trend.petrol)}%`, backgroundColor: RISK_COLORS[data!.risk_level] || '#f57c00' }]} />
-                  </View>
                   <Text style={[styles.metricValue, { color: RISK_COLORS[data!.risk_level] || '#f57c00' }]}>
-                    {data!.risk_level} · {calcRiskPercent(data!.risk_level, data!.trend.petrol).toFixed(0)}%
+                    {data!.risk_level}
                   </Text>
-                  <Text style={styles.metricSub}></Text>
                 </View>
                 <View style={styles.metricCard}>
                   <Text style={styles.metricLabel}>Business Impact</Text>
-                  <View style={styles.metricBarTrack}>
-                    <View style={[styles.metricBarFill, { width: `${calcImpactPercent(data!.impact_score, data!.trend.petrol_change)}%`, backgroundColor: RISK_COLORS[calcImpactPercent(data!.impact_score, data!.trend.petrol_change) > 50 ? 'High' : calcImpactPercent(data!.impact_score, data!.trend.petrol_change) > 25 ? 'Moderate' : 'Low'] || '#f57c00' }]} />
-                  </View>
-                  <Text style={[styles.metricValue, { color: RISK_COLORS[calcImpactPercent(data!.impact_score, data!.trend.petrol_change) > 50 ? 'High' : calcImpactPercent(data!.impact_score, data!.trend.petrol_change) > 25 ? 'Moderate' : 'Low'] || '#f57c00' }]}>
-                    {data!.impact_score} · {calcImpactPercent(data!.impact_score, data!.trend.petrol_change).toFixed(0)}%
+                  <Text style={[styles.metricValue, { color: IMPACT_COLORS[data!.impact_score] || '#f57c00' }]}>
+                    {data!.impact_score}
                   </Text>
-                  <Text style={styles.metricSub}></Text>
                 </View>
               </View>
 
@@ -316,6 +304,19 @@ export default function HomeScreen() {
                       <Text style={styles.globalCrudeValue}>${data!.global_crude.wti_usd?.toFixed(2)}</Text>
                       <Text style={styles.globalCrudeUnit}>/bbl</Text>
                     </View>
+                    <View style={styles.globalCrudeDivider} />
+                    <View style={styles.globalCrudeItem}>
+                      <Text style={styles.globalCrudeLabel}>Gasoline</Text>
+                      <Text style={styles.globalCrudeValue}>${data!.global_crude.gasoline_global_usd?.toFixed(2)}</Text>
+                      <Text style={styles.globalCrudeUnit}>/gal</Text>
+                    </View>
+                  </View>
+                  <View style={styles.mauritiusImpact}>
+                    <Text style={styles.impactTitle}>Impact on Mauritius</Text>
+                    <Text style={styles.impactText}>
+                      Brent crude at ${data!.global_crude.brent_usd.toFixed(2)}/bbl {data!.trend.petrol === 'up' ? 'pushes' : 'eases'} local retail prices. 
+                      Mauritius imports refined petroleum — every ${data!.trend.petrol === 'up' ? 'rise' : 'drop'} in crude reflects at the pump within 2-3 weeks.
+                    </Text>
                   </View>
                   <Text style={styles.globalCrudeSource}>via {data!.global_crude.source}</Text>
                 </View>
@@ -446,10 +447,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#dee5ef', padding: 16, alignItems: 'center', gap: 4,
   },
   metricLabel: { fontSize: 12, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
-  metricBarTrack: { height: 6, backgroundColor: '#e2e2e5', borderRadius: 3, overflow: 'hidden' },
-  metricBarFill: { height: '100%', borderRadius: 3 },
-  metricValue: { fontSize: 16, fontWeight: '700' },
-  metricSub: { fontSize: 10, color: '#747683' },
+  metricValue: { fontSize: 20, fontWeight: '700' },
 
   badge: {
     backgroundColor: '#dbe1ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
@@ -486,6 +484,11 @@ const styles = StyleSheet.create({
   globalCrudeUnit: { fontSize: 12, color: '#80bfff' },
   globalCrudeDivider: { width: 1, height: 40, backgroundColor: '#1a3a5c' },
   globalCrudeSource: { fontSize: 10, color: '#5a7a9a', textAlign: 'center' },
+  mauritiusImpact: {
+    backgroundColor: 'rgba(0,48,135,0.15)', borderRadius: 8, padding: 12, gap: 4,
+  },
+  impactTitle: { fontSize: 11, fontWeight: '700', color: '#80bfff', textTransform: 'uppercase' },
+  impactText: { fontSize: 12, color: '#b0d0ff', lineHeight: 17 },
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end',
   },
