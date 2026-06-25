@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -10,6 +10,13 @@ import { Sparkline } from '@/components/Sparkline';
 type PriceDay = { date: string; label: string; petrol: number; diesel: number };
 type Summary = { avg: number; min: number; max: number; change: number };
 
+const RANGE_OPTIONS = [
+  { label: '1D', days: 1 },
+  { label: '7D', days: 7 },
+  { label: '30D', days: 30 },
+  { label: '90D', days: 90 },
+] as const;
+
 function calcSummary(values: number[]): Summary {
   if (values.length === 0) return { avg: 0, min: 0, max: 0, change: 0 };
   return {
@@ -20,17 +27,26 @@ function calcSummary(values: number[]): Summary {
   };
 }
 
-const MOCK_DATA: PriceDay[] = Array.from({ length: 30 }, (_, i) => {
-  const d = new Date();
-  d.setDate(d.getDate() - (29 - i));
-  const base = 64 + Math.sin(i / 3) * 4 + (i / 30) * 3;
-  return {
-    date: d.toISOString().slice(0, 10),
-    label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    petrol: parseFloat(base.toFixed(3)),
-    diesel: parseFloat((base * 1.085 + Math.cos(i / 4) * 3).toFixed(3)),
-  };
-});
+function makeMockData(days: number): PriceDay[] {
+  return Array.from({ length: Math.max(days, 2) }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (Math.max(days, 2) - 1 - i));
+    const base = 64 + Math.sin(i / 3) * 4 + (i / Math.max(days, 2)) * 3;
+    return {
+      date: d.toISOString().slice(0, 10),
+      label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      petrol: parseFloat(base.toFixed(3)),
+      diesel: parseFloat((base * 1.085 + Math.cos(i / 4) * 3).toFixed(3)),
+    };
+  });
+}
+
+function calcDailyChanges(data: PriceDay[], key: 'petrol' | 'diesel') {
+  return data.map((d, i) => ({
+    label: d.label,
+    change: i === 0 ? 0 : d[key] - data[i - 1][key],
+  }));
+}
 
 export default function PricesScreen() {
   const [history, setHistory] = useState<PriceDay[]>([]);
@@ -38,11 +54,12 @@ export default function PricesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFuel, setSelectedFuel] = useState<'petrol' | 'diesel'>('petrol');
+  const [selectedDays, setSelectedDays] = useState(30);
 
-  const fetchHistory = useCallback(async () => {
+  const fetchHistory = useCallback(async (days: number) => {
     setError(null);
     try {
-      const res = await api.prices.history();
+      const res = await api.prices.history(days);
       setHistory(res);
     } catch (err: any) {
       if (err.status === 401) {
@@ -50,7 +67,7 @@ export default function PricesScreen() {
         return;
       }
       setError('⚠ Unable to load price history — showing offline data');
-      setHistory(MOCK_DATA);
+      setHistory(makeMockData(days));
     } finally {
       setLoading(false);
     }
@@ -59,31 +76,73 @@ export default function PricesScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const res = await api.prices.history();
+      const res = await api.prices.history(selectedDays);
       setHistory(res);
     } catch { /* ignore */ }
     setRefreshing(false);
-  }, []);
+  }, [selectedDays]);
 
-  useEffect(() => { fetchHistory(); }, []);
+  const handleRangeChange = useCallback((days: number) => {
+    setSelectedDays(days);
+    setLoading(true);
+    fetchHistory(days);
+  }, [fetchHistory]);
+
+  useEffect(() => { fetchHistory(selectedDays); }, []);
+
+  const rangeLabel = RANGE_OPTIONS.find(r => r.days === selectedDays)?.label || `${selectedDays}D`;
 
   const currentData = history.map(d => ({ label: d.label, value: d[selectedFuel] }));
   const summary = calcSummary(currentData.map(d => d.value));
   const latest = history.length > 0 ? history[history.length - 1] : null;
   const earliest = history.length > 0 ? history[0] : null;
 
-  const petrolChanges = history.map((d, i) => ({
-    label: d.label,
-    change: i === 0 ? 0 : d.petrol - history[i - 1].petrol,
-  }));
-  const dieselChanges = history.map((d, i) => ({
-    label: d.label,
-    change: i === 0 ? 0 : d.diesel - history[i - 1].diesel,
-  }));
+  const petrolChanges = useMemo(() => calcDailyChanges(history, 'petrol'), [history]);
+  const dieselChanges = useMemo(() => calcDailyChanges(history, 'diesel'), [history]);
   const petrolSpark = history.map(d => d.petrol);
   const dieselSpark = history.map(d => d.diesel);
   const petrolSummary = calcSummary(history.map(d => d.petrol));
   const dieselSummary = calcSummary(history.map(d => d.diesel));
+
+  const spread = latest ? latest.diesel - latest.petrol : 0;
+  const spreadPct = latest && latest.petrol > 0 ? (spread / latest.petrol) * 100 : 0;
+
+  const biggestUp = useMemo(() => {
+    const all = [...petrolChanges.slice(1), ...dieselChanges.slice(1)];
+    const max = Math.max(...all.map(d => d.change));
+    const entry = all.find(d => d.change === max);
+    return entry || null;
+  }, [petrolChanges, dieselChanges]);
+
+  const biggestDown = useMemo(() => {
+    const all = [...petrolChanges.slice(1), ...dieselChanges.slice(1)];
+    const min = Math.min(...all.map(d => d.change));
+    const entry = all.find(d => d.change === min);
+    return entry || null;
+  }, [petrolChanges, dieselChanges]);
+
+  const volatility = useMemo(() => {
+    const allPrices = [...history.flatMap(d => [d.petrol, d.diesel])];
+    if (allPrices.length === 0) return 0;
+    const avg = allPrices.reduce((a, b) => a + b, 0) / allPrices.length;
+    const range = Math.max(...allPrices) - Math.min(...allPrices);
+    return avg > 0 ? (range / avg) * 100 : 0;
+  }, [history]);
+
+  const weeklyTrend = useMemo(() => {
+    if (history.length < 4) return null;
+    const mid = Math.floor(history.length / 2);
+    const firstHalf = history.slice(0, mid);
+    const secondHalf = history.slice(mid);
+    const firstAvgP = firstHalf.reduce((s, d) => s + d.petrol, 0) / firstHalf.length;
+    const secondAvgP = secondHalf.reduce((s, d) => s + d.petrol, 0) / secondHalf.length;
+    const firstAvgD = firstHalf.reduce((s, d) => s + d.diesel, 0) / firstHalf.length;
+    const secondAvgD = secondHalf.reduce((s, d) => s + d.diesel, 0) / secondHalf.length;
+    return {
+      petrol: firstAvgP > 0 ? ((secondAvgP - firstAvgP) / firstAvgP) * 100 : 0,
+      diesel: firstAvgD > 0 ? ((secondAvgD - firstAvgD) / firstAvgD) * 100 : 0,
+    };
+  }, [history]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -103,26 +162,40 @@ export default function PricesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {error && (
-          <TouchableOpacity style={styles.errorBanner} onPress={fetchHistory}>
+          <TouchableOpacity style={styles.errorBanner} onPress={() => fetchHistory(selectedDays)}>
             <Text style={styles.errorText}>{error}</Text>
             <Text style={styles.retryText}>Tap to retry</Text>
           </TouchableOpacity>
         )}
 
-        <View style={styles.toggleRow}>
+        <View style={styles.rangeRow}>
+          {RANGE_OPTIONS.map(opt => (
+            <TouchableOpacity
+              key={opt.days}
+              style={[styles.rangeBtn, selectedDays === opt.days && styles.rangeBtnActive]}
+              onPress={() => handleRangeChange(opt.days)}
+            >
+              <Text style={[styles.rangeText, selectedDays === opt.days && styles.rangeTextActive]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.fuelRow}>
           <TouchableOpacity
-            style={[styles.toggleBtn, selectedFuel === 'petrol' && styles.toggleActive]}
+            style={[styles.fuelBtn, selectedFuel === 'petrol' && styles.fuelBtnActive]}
             onPress={() => setSelectedFuel('petrol')}
           >
-            <Text style={[styles.toggleText, selectedFuel === 'petrol' && styles.toggleTextActive]}>
+            <Text style={[styles.fuelText, selectedFuel === 'petrol' && styles.fuelTextActive]}>
               Petrol
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toggleBtn, selectedFuel === 'diesel' && styles.toggleActive]}
+            style={[styles.fuelBtn, selectedFuel === 'diesel' && styles.fuelBtnActive]}
             onPress={() => setSelectedFuel('diesel')}
           >
-            <Text style={[styles.toggleText, selectedFuel === 'diesel' && styles.toggleTextActive]}>
+            <Text style={[styles.fuelText, selectedFuel === 'diesel' && styles.fuelTextActive]}>
               Diesel
             </Text>
           </TouchableOpacity>
@@ -132,7 +205,7 @@ export default function PricesScreen() {
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
               <View>
-                <Text style={styles.priceUnit}>Current Price</Text>
+                <Text style={styles.priceLabel}>Current Price</Text>
                 <Text style={styles.priceValue}>Rs {latest[selectedFuel].toFixed(2)}</Text>
               </View>
               <Sparkline
@@ -142,16 +215,16 @@ export default function PricesScreen() {
                 color={selectedFuel === 'petrol' ? '#003087' : '#d32f2f'}
               />
             </View>
-            <View style={styles.changeContainer}>
+            <View style={styles.changeRow}>
               <Text style={[styles.changeText, { color: summary.change >= 0 ? '#d32f2f' : '#2e7d32' }]}>
-                {summary.change >= 0 ? '↑' : '↓'} {Math.abs(summary.change).toFixed(1)}% (30 days)
+                {summary.change >= 0 ? '↑' : '↓'} {Math.abs(summary.change).toFixed(1)}% ({rangeLabel})
               </Text>
             </View>
           </View>
         )}
 
         <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Price Trend — 30 Days</Text>
+          <Text style={styles.chartTitle}>Price Trend — {rangeLabel}</Text>
           <LineChart
             data={currentData}
             color={selectedFuel === 'petrol' ? '#003087' : '#d32f2f'}
@@ -159,7 +232,7 @@ export default function PricesScreen() {
           />
         </View>
 
-        <View style={styles.statsGrid}>
+        <View style={styles.statsGrid3}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Avg</Text>
             <Text style={styles.statValue}>Rs {summary.avg.toFixed(2)}</Text>
@@ -174,16 +247,61 @@ export default function PricesScreen() {
           </View>
         </View>
 
-        <View style={styles.legendRow}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#003087' }]} />
-            <Text style={styles.legendText}>Petrol</Text>
+        <View style={styles.infoGrid2}>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>📏</Text>
+            <Text style={styles.infoLabel}>Petrol vs Diesel</Text>
+            <Text style={styles.infoValue}>Rs {spread.toFixed(2)}</Text>
+            <Text style={styles.infoSub}>Diesel costs {spreadPct.toFixed(1)}% more</Text>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#d32f2f' }]} />
-            <Text style={styles.legendText}>Diesel</Text>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>📊</Text>
+            <Text style={styles.infoLabel}>Volatility</Text>
+            <Text style={styles.infoValue}>{volatility.toFixed(1)}%</Text>
+            <Text style={styles.infoSub}>Price range / avg</Text>
           </View>
         </View>
+
+        <View style={styles.infoGrid2}>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>📈</Text>
+            <Text style={styles.infoLabel}>Biggest Jump</Text>
+            <Text style={[styles.infoValue, { color: '#d32f2f' }]}>
+              {biggestUp ? `Rs ${biggestUp.change.toFixed(3)}` : '—'}
+            </Text>
+            <Text style={styles.infoSub}>{biggestUp?.label || ''}</Text>
+          </View>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>📉</Text>
+            <Text style={styles.infoLabel}>Biggest Drop</Text>
+            <Text style={[styles.infoValue, { color: '#2e7d32' }]}>
+              {biggestDown ? `Rs ${biggestDown.change.toFixed(3)}` : '—'}
+            </Text>
+            <Text style={styles.infoSub}>{biggestDown?.label || ''}</Text>
+          </View>
+        </View>
+
+        {weeklyTrend && (
+          <View style={styles.weeklyCard}>
+            <Text style={styles.weeklyTitle}>Mid-Period Comparison</Text>
+            <View style={styles.weeklyRow}>
+              <View style={styles.weeklyItem}>
+                <Text style={styles.weeklyLabel}>Petrol</Text>
+                <Text style={[styles.weeklyValue, { color: weeklyTrend.petrol >= 0 ? '#d32f2f' : '#2e7d32' }]}>
+                  {weeklyTrend.petrol >= 0 ? '↑' : '↓'} {Math.abs(weeklyTrend.petrol).toFixed(1)}%
+                </Text>
+              </View>
+              <View style={styles.weeklyDivider} />
+              <View style={styles.weeklyItem}>
+                <Text style={styles.weeklyLabel}>Diesel</Text>
+                <Text style={[styles.weeklyValue, { color: weeklyTrend.diesel >= 0 ? '#d32f2f' : '#2e7d32' }]}>
+                  {weeklyTrend.diesel >= 0 ? '↑' : '↓'} {Math.abs(weeklyTrend.diesel).toFixed(1)}%
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.weeklySub}>2nd half vs 1st half avg</Text>
+          </View>
+        )}
 
         <View style={styles.changeCardsRow}>
           <View style={[styles.changeCard, { borderTopColor: '#003087' }]}>
@@ -195,7 +313,7 @@ export default function PricesScreen() {
               <Text style={[styles.changeCardPct, { color: petrolSummary.change >= 0 ? '#d32f2f' : '#2e7d32' }]}>
                 {petrolSummary.change >= 0 ? '↑' : '↓'} {Math.abs(petrolSummary.change).toFixed(1)}%
               </Text>
-              <Text style={styles.changeCardLabel}>30d change</Text>
+              <Text style={styles.changeCardLabel}>{rangeLabel} change</Text>
             </View>
             <Sparkline data={petrolSpark} width={140} height={36} color="#003087" />
             <View style={styles.barGroup}>
@@ -228,7 +346,7 @@ export default function PricesScreen() {
               <Text style={[styles.changeCardPct, { color: dieselSummary.change >= 0 ? '#d32f2f' : '#2e7d32' }]}>
                 {dieselSummary.change >= 0 ? '↑' : '↓'} {Math.abs(dieselSummary.change).toFixed(1)}%
               </Text>
-              <Text style={styles.changeCardLabel}>30d change</Text>
+              <Text style={styles.changeCardLabel}>{rangeLabel} change</Text>
             </View>
             <Sparkline data={dieselSpark} width={140} height={36} color="#d32f2f" />
             <View style={styles.barGroup}>
@@ -297,40 +415,73 @@ const styles = StyleSheet.create({
   },
   errorText: { fontSize: 13, color: '#93000a', flex: 1 },
   retryText: { fontSize: 12, fontWeight: '600', color: '#ba1a1a', marginLeft: 8 },
-  toggleRow: { flexDirection: 'row', gap: 8 },
-  toggleBtn: {
+
+  rangeRow: { flexDirection: 'row', gap: 6 },
+  rangeBtn: {
+    flex: 1, paddingVertical: 8, borderRadius: 6,
+    backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#c4c6d4',
+    alignItems: 'center',
+  },
+  rangeBtnActive: { borderColor: '#003087', backgroundColor: '#003087' },
+  rangeText: { fontSize: 12, fontWeight: '600', color: '#747683' },
+  rangeTextActive: { color: '#ffffff' },
+
+  fuelRow: { flexDirection: 'row', gap: 8 },
+  fuelBtn: {
     flex: 1, paddingVertical: 10, borderRadius: 8,
     backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#c4c6d4',
     alignItems: 'center',
   },
-  toggleActive: { borderColor: '#003087', backgroundColor: '#dbe1ff' },
-  toggleText: { fontSize: 14, fontWeight: '600', color: '#747683' },
-  toggleTextActive: { color: '#003087' },
+  fuelBtnActive: { borderColor: '#003087', backgroundColor: '#dbe1ff' },
+  fuelText: { fontSize: 14, fontWeight: '600', color: '#747683' },
+  fuelTextActive: { color: '#003087' },
+
   priceCard: {
     backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
     padding: 20, gap: 8,
   },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  priceUnit: { fontSize: 12, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
+  priceLabel: { fontSize: 12, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
   priceValue: { fontSize: 28, fontWeight: '700', color: '#1a1c1e' },
-  changeContainer: { flexDirection: 'row', alignItems: 'center' },
+  changeRow: { flexDirection: 'row', alignItems: 'center' },
   changeText: { fontSize: 13, fontWeight: '600' },
+
   chartCard: {
     backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
     padding: 16, alignItems: 'center',
   },
   chartTitle: { fontSize: 14, fontWeight: '600', color: '#444652', marginBottom: 8, alignSelf: 'flex-start' },
-  statsGrid: { flexDirection: 'row', gap: 8 },
+
+  statsGrid3: { flexDirection: 'row', gap: 8 },
   statCard: {
     flex: 1, backgroundColor: '#ffffff', borderRadius: 8, borderWidth: 1, borderColor: '#dee5ef',
     padding: 12, alignItems: 'center', gap: 4,
   },
   statLabel: { fontSize: 11, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
   statValue: { fontSize: 18, fontWeight: '700', color: '#1a1c1e' },
-  legendRow: { flexDirection: 'row', gap: 24, justifyContent: 'center' },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendText: { fontSize: 12, color: '#747683' },
+
+  infoGrid2: { flexDirection: 'row', gap: 8 },
+  infoCard: {
+    flex: 1, backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
+    padding: 14, gap: 4,
+  },
+  infoIcon: { fontSize: 18 },
+  infoLabel: { fontSize: 11, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
+  infoValue: { fontSize: 20, fontWeight: '700', color: '#1a1c1e' },
+  infoSub: { fontSize: 11, color: '#747683' },
+
+  weeklyCard: {
+    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
+    padding: 16, gap: 10,
+  },
+  weeklyTitle: { fontSize: 13, fontWeight: '700', color: '#1a1c1e', textTransform: 'uppercase' },
+  weeklyRow: { flexDirection: 'row', alignItems: 'center' },
+  weeklyItem: { flex: 1, alignItems: 'center', gap: 2 },
+  weeklyDivider: { width: 1, height: 24, backgroundColor: '#dee5ef' },
+  weeklyLabel: { fontSize: 11, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
+  weeklyValue: { fontSize: 18, fontWeight: '700' },
+  weeklySub: { fontSize: 10, color: '#747683', textAlign: 'center' },
+
   changeCardsRow: { flexDirection: 'row', gap: 8 },
   changeCard: {
     flex: 1, backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1,
@@ -353,6 +504,7 @@ const styles = StyleSheet.create({
   },
   changeStats: { flexDirection: 'row', justifyContent: 'space-between' },
   changeStat: { fontSize: 11, color: '#747683' },
+
   historySection: { gap: 4 },
   historyTitle: { fontSize: 16, fontWeight: '700', color: '#1a1c1e', marginBottom: 8 },
   historyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
