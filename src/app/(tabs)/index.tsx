@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Animated, Modal } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
-import { api, ApiError } from '@/services/api';
+import { api } from '@/services/api';
 import { getUser } from '@/services/auth';
 import { Sparkline } from '@/components/Sparkline';
 
@@ -70,41 +70,6 @@ function makeSparkline(current: number, trend: string, change: number): number[]
     arr.push(parseFloat((current - current * trendVal * pct + (Math.random() - 0.5) * 0.01).toFixed(3)));
   }
   return arr;
-}
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  MUR: 'Rs', USD: '$', EUR: '€', GBP: '£',
-};
-
-function currencySymbol(code: string | undefined): string {
-  return CURRENCY_SYMBOLS[code ?? ''] || code || '$';
-}
-
-function SkeletonBlock({ width, height, style }: { width?: number | string; height: number; style?: any }) {
-  return (
-    <View style={[{ width: width ?? '100%', height, backgroundColor: '#e2e2e5', borderRadius: 8 }, style]} />
-  );
-}
-
-function SkeletonDashboard() {
-  return (
-    <View style={styles.scrollContent}>
-      <View style={[styles.heroCard, { gap: 8 }]}>
-        <SkeletonBlock width={100} height={12} />
-        <SkeletonBlock width="70%" height={28} />
-        <SkeletonBlock width="85%" height={14} />
-      </View>
-      <View style={styles.priceGrid}>
-        <View style={styles.priceCard}><SkeletonBlock height={16} /><SkeletonBlock width="60%" height={24} /></View>
-        <View style={styles.priceCard}><SkeletonBlock height={16} /><SkeletonBlock width="60%" height={24} /></View>
-      </View>
-      <View style={styles.insightCard}><SkeletonBlock height={40} width={40} style={{ borderRadius: 8 }} /><View style={{ flex: 1, gap: 4 }}><SkeletonBlock width="40%" height={14} /><SkeletonBlock height={12} /></View></View>
-      <View style={styles.metricsRow}>
-        <View style={styles.metricCard}><SkeletonBlock width="60%" height={14} /><SkeletonBlock width="40%" height={24} /></View>
-        <View style={styles.metricCard}><SkeletonBlock width="60%" height={14} /><SkeletonBlock width="40%" height={24} /></View>
-      </View>
-    </View>
-  );
 }
 
 export default function HomeScreen() {
@@ -186,7 +151,16 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {loading && !data ? (
-          <SkeletonDashboard />
+          <View style={styles.scrollContent}>
+            <View style={[styles.bannerCard, { gap: 6 }]}>
+              <View style={{ width: 80, height: 10, backgroundColor: '#e2e2e5', borderRadius: 4 }} />
+              <View style={{ width: '60%', height: 18, backgroundColor: '#e2e2e5', borderRadius: 4 }} />
+            </View>
+            <View style={styles.priceGrid}>
+              <View style={styles.priceCard}><View style={{ height: 14, width: '50%', backgroundColor: '#e2e2e5', borderRadius: 4 }} /><View style={{ height: 22, width: '70%', backgroundColor: '#e2e2e5', borderRadius: 4, marginTop: 6 }} /></View>
+              <View style={styles.priceCard}><View style={{ height: 14, width: '50%', backgroundColor: '#e2e2e5', borderRadius: 4 }} /><View style={{ height: 22, width: '70%', backgroundColor: '#e2e2e5', borderRadius: 4, marginTop: 6 }} /></View>
+            </View>
+          </View>
         ) : (
           <>
             {error && (
@@ -196,11 +170,13 @@ export default function HomeScreen() {
               </TouchableOpacity>
             )}
 
-            <View style={styles.heroCard}>
-              <View style={styles.heroBg} />
-              <Text style={styles.heroLabel}>Recommendation</Text>
-              <Text style={styles.heroTitle}>{data!.recommendation.title}</Text>
-              <Text style={styles.heroText}>{data!.recommendation.content}</Text>
+            <View style={styles.bannerCard}>
+              <View style={styles.bannerAccent} />
+              <View style={styles.bannerContent}>
+                <Text style={styles.bannerLabel}>Recommendation</Text>
+                <Text style={styles.bannerTitle}>{data!.recommendation.title}</Text>
+                <Text style={styles.bannerText}>{data!.recommendation.content}</Text>
+              </View>
             </View>
 
             <View style={styles.priceGrid}>
@@ -218,7 +194,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.priceBody}>
                   <Text style={styles.priceValue}>
-                    {currencySymbol(data!.current_price.currency)} {data!.current_price.petrol.toFixed(2)}
+                    Rs {data!.current_price.petrol.toFixed(2)}
                     <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
                   </Text>
                   <Sparkline
@@ -245,7 +221,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.priceBody}>
                   <Text style={styles.priceValue}>
-                    {currencySymbol(data!.current_price.currency)} {data!.current_price.diesel.toFixed(2)}
+                    Rs {data!.current_price.diesel.toFixed(2)}
                     <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
                   </Text>
                   <Sparkline
@@ -308,8 +284,8 @@ export default function HomeScreen() {
                 <Text style={styles.newsSectionTitle}>Oil & Fuel Market — Mauritius</Text>
                 {newsLoading ? (
                   <View style={{ gap: 12 }}>
-                    <SkeletonBlock height={60} />
-                    <SkeletonBlock height={60} />
+                    <View style={{ height: 60, backgroundColor: '#e2e2e5', borderRadius: 8 }} />
+                    <View style={{ height: 60, backgroundColor: '#e2e2e5', borderRadius: 8 }} />
                   </View>
                 ) : news.length === 0 ? (
                   <Text style={styles.newsEmpty}>No news articles available</Text>
@@ -377,24 +353,22 @@ const styles = StyleSheet.create({
   profileBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   profileIcon: { fontSize: 22 },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 32, gap: 24 },
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 32, gap: 20 },
   errorBanner: {
     backgroundColor: '#ffdad6', padding: 12, borderRadius: 8,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
   errorText: { fontSize: 13, color: '#93000a', flex: 1 },
   retryText: { fontSize: 12, fontWeight: '600', color: '#ba1a1a', marginLeft: 8 },
-  heroCard: {
-    backgroundColor: '#f0f4fa', borderRadius: 12, padding: 24,
-    position: 'relative', overflow: 'hidden',
+  bannerCard: {
+    backgroundColor: '#e8edf5', borderRadius: 10, flexDirection: 'row',
+    overflow: 'hidden', borderWidth: 1, borderColor: '#cdd7e6',
   },
-  heroBg: {
-    position: 'absolute', right: -32, top: -32, width: 120, height: 120,
-    borderRadius: 60, backgroundColor: 'rgba(0,48,135,0.05)',
-  },
-  heroLabel: { fontSize: 12, fontWeight: '600', color: '#1c4197', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
-  heroTitle: { fontSize: 26, fontWeight: '700', color: '#003087', lineHeight: 32, marginBottom: 8 },
-  heroText: { fontSize: 14, color: '#444652', lineHeight: 20, maxWidth: '85%' },
+  bannerAccent: { width: 5, backgroundColor: '#003087' },
+  bannerContent: { flex: 1, padding: 14, gap: 4 },
+  bannerLabel: { fontSize: 10, fontWeight: '700', color: '#003087', textTransform: 'uppercase', letterSpacing: 1 },
+  bannerTitle: { fontSize: 15, fontWeight: '700', color: '#1a1c1e' },
+  bannerText: { fontSize: 13, color: '#444652', lineHeight: 18 },
   priceGrid: { flexDirection: 'row', gap: 12 },
   priceCard: {
     flex: 1, backgroundColor: '#ffffff', borderRadius: 12,
