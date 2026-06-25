@@ -72,6 +72,19 @@ export default function PricesScreen() {
   const latest = history.length > 0 ? history[history.length - 1] : null;
   const earliest = history.length > 0 ? history[0] : null;
 
+  const petrolChanges = history.map((d, i) => ({
+    label: d.label,
+    change: i === 0 ? 0 : d.petrol - history[i - 1].petrol,
+  }));
+  const dieselChanges = history.map((d, i) => ({
+    label: d.label,
+    change: i === 0 ? 0 : d.diesel - history[i - 1].diesel,
+  }));
+  const petrolSpark = history.map(d => d.petrol);
+  const dieselSpark = history.map(d => d.diesel);
+  const petrolSummary = calcSummary(history.map(d => d.petrol));
+  const dieselSummary = calcSummary(history.map(d => d.diesel));
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -172,6 +185,74 @@ export default function PricesScreen() {
           </View>
         </View>
 
+        <View style={styles.changeCardsRow}>
+          <View style={[styles.changeCard, { borderTopColor: '#003087' }]}>
+            <View style={styles.changeCardHeader}>
+              <Text style={styles.changeCardFuel}>Petrol</Text>
+              <Text style={styles.changeCardPrice}>Rs {petrolSummary.avg.toFixed(2)}</Text>
+            </View>
+            <View style={styles.changeCardTrend}>
+              <Text style={[styles.changeCardPct, { color: petrolSummary.change >= 0 ? '#d32f2f' : '#2e7d32' }]}>
+                {petrolSummary.change >= 0 ? '↑' : '↓'} {Math.abs(petrolSummary.change).toFixed(1)}%
+              </Text>
+              <Text style={styles.changeCardLabel}>30d change</Text>
+            </View>
+            <Sparkline data={petrolSpark} width={140} height={36} color="#003087" />
+            <View style={styles.barGroup}>
+              {petrolChanges.slice(-10).map((d, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.changeBar,
+                    {
+                      backgroundColor: d.change > 0 ? '#ffcdd2' : d.change < 0 ? '#c8e6c9' : '#e0e0e0',
+                      height: Math.min(Math.abs(d.change) * 6, 24) + 4,
+                    },
+                  ]}
+                />
+              ))}
+              <Text style={styles.barLabel}>Daily Δ</Text>
+            </View>
+            <View style={styles.changeStats}>
+              <Text style={styles.changeStat}>H: Rs {petrolSummary.max.toFixed(2)}</Text>
+              <Text style={styles.changeStat}>L: Rs {petrolSummary.min.toFixed(2)}</Text>
+            </View>
+          </View>
+
+          <View style={[styles.changeCard, { borderTopColor: '#d32f2f' }]}>
+            <View style={styles.changeCardHeader}>
+              <Text style={styles.changeCardFuel}>Diesel</Text>
+              <Text style={styles.changeCardPrice}>Rs {dieselSummary.avg.toFixed(2)}</Text>
+            </View>
+            <View style={styles.changeCardTrend}>
+              <Text style={[styles.changeCardPct, { color: dieselSummary.change >= 0 ? '#d32f2f' : '#2e7d32' }]}>
+                {dieselSummary.change >= 0 ? '↑' : '↓'} {Math.abs(dieselSummary.change).toFixed(1)}%
+              </Text>
+              <Text style={styles.changeCardLabel}>30d change</Text>
+            </View>
+            <Sparkline data={dieselSpark} width={140} height={36} color="#d32f2f" />
+            <View style={styles.barGroup}>
+              {dieselChanges.slice(-10).map((d, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.changeBar,
+                    {
+                      backgroundColor: d.change > 0 ? '#ffcdd2' : d.change < 0 ? '#c8e6c9' : '#e0e0e0',
+                      height: Math.min(Math.abs(d.change) * 6, 24) + 4,
+                    },
+                  ]}
+                />
+              ))}
+              <Text style={styles.barLabel}>Daily Δ</Text>
+            </View>
+            <View style={styles.changeStats}>
+              <Text style={styles.changeStat}>H: Rs {dieselSummary.max.toFixed(2)}</Text>
+              <Text style={styles.changeStat}>L: Rs {dieselSummary.min.toFixed(2)}</Text>
+            </View>
+          </View>
+        </View>
+
         {history.length > 0 && (
           <View style={styles.historySection}>
             <Text style={styles.historyTitle}>Recent Days</Text>
@@ -250,6 +331,28 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendText: { fontSize: 12, color: '#747683' },
+  changeCardsRow: { flexDirection: 'row', gap: 8 },
+  changeCard: {
+    flex: 1, backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1,
+    borderColor: '#dee5ef', borderTopWidth: 3, padding: 12, gap: 8,
+  },
+  changeCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  changeCardFuel: { fontSize: 13, fontWeight: '700', color: '#1a1c1e', textTransform: 'uppercase' },
+  changeCardPrice: { fontSize: 16, fontWeight: '600', color: '#1a1c1e' },
+  changeCardTrend: { alignItems: 'flex-start' },
+  changeCardPct: { fontSize: 18, fontWeight: '700' },
+  changeCardLabel: { fontSize: 10, color: '#747683', textTransform: 'uppercase' },
+  barGroup: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 30,
+    paddingBottom: 14, position: 'relative',
+  },
+  changeBar: { flex: 1, borderRadius: 2, minHeight: 4 },
+  barLabel: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    fontSize: 9, color: '#747683', textAlign: 'center',
+  },
+  changeStats: { flexDirection: 'row', justifyContent: 'space-between' },
+  changeStat: { fontSize: 11, color: '#747683' },
   historySection: { gap: 4 },
   historyTitle: { fontSize: 16, fontWeight: '700', color: '#1a1c1e', marginBottom: 8 },
   historyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
