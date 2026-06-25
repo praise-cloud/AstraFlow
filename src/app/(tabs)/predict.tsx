@@ -74,7 +74,7 @@ export default function PredictScreen() {
         router.replace('/login');
         return;
       }
-      const ppl = forecast?.current_price || 1.62;
+      const ppl = forecast?.current_price || 64;
       const fallback = {
         liters: val, price_per_liter: ppl, total_cost: parseFloat((val * ppl).toFixed(2)),
         carbon_footprint_kg: parseFloat((val * 2.3).toFixed(2)),
@@ -142,7 +142,7 @@ export default function PredictScreen() {
                 <View>
                   <Text style={styles.forecastLabel}>30-Day Forecast</Text>
                   <Text style={styles.forecastPrice}>
-                    ${forecast.avg_forecast.toFixed(3)}
+                    Rs {forecast.avg_forecast.toFixed(3)}
                     <Text style={styles.forecastUnit}> /L avg</Text>
                   </Text>
                 </View>
@@ -178,15 +178,15 @@ export default function PredictScreen() {
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Current</Text>
-            <Text style={styles.statValue}>${forecast?.current_price.toFixed(3) || '—'}</Text>
+            <Text style={styles.statValue}>Rs {forecast?.current_price.toFixed(3) || '—'}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Min</Text>
-            <Text style={styles.statValue}>${forecast?.min_forecast.toFixed(3) || '—'}</Text>
+            <Text style={styles.statValue}>Rs {forecast?.min_forecast.toFixed(3) || '—'}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Max</Text>
-            <Text style={styles.statValue}>${forecast?.max_forecast.toFixed(3) || '—'}</Text>
+            <Text style={styles.statValue}>Rs {forecast?.max_forecast.toFixed(3) || '—'}</Text>
           </View>
         </View>
 
@@ -229,7 +229,7 @@ export default function PredictScreen() {
                   <Text style={styles.resultLabel}>
                     {result.forecast.trend === 'up' ? 'Projected Cost (30d)' : 'Current Cost'}
                   </Text>
-                  <Text style={styles.resultPrice}>${result.total_cost.toFixed(2)}</Text>
+                  <Text style={styles.resultPrice}>Rs {result.total_cost.toFixed(2)}</Text>
                 </View>
                 <View style={styles.resultIconContainer}>
                   <Text style={styles.resultIcon}>💰</Text>
@@ -239,7 +239,7 @@ export default function PredictScreen() {
               <View style={styles.resultGrid}>
                 <View>
                   <Text style={styles.resultGridLabel}>Price / L</Text>
-                  <Text style={styles.resultGridValue}>${result.price_per_liter.toFixed(3)}</Text>
+                  <Text style={styles.resultGridValue}>Rs {result.price_per_liter.toFixed(3)}</Text>
                 </View>
                 <View>
                   <Text style={styles.resultGridLabel}>Carbon</Text>

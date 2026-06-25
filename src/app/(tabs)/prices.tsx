@@ -23,12 +23,12 @@ function calcSummary(values: number[]): Summary {
 const MOCK_DATA: PriceDay[] = Array.from({ length: 30 }, (_, i) => {
   const d = new Date();
   d.setDate(d.getDate() - (29 - i));
-  const base = 1.64 + Math.sin(i / 3) * 0.04 + (i / 30) * 0.03;
+  const base = 64 + Math.sin(i / 3) * 4 + (i / 30) * 3;
   return {
     date: d.toISOString().slice(0, 10),
     label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     petrol: parseFloat(base.toFixed(3)),
-    diesel: parseFloat((base * 1.085 + Math.cos(i / 4) * 0.03).toFixed(3)),
+    diesel: parseFloat((base * 1.085 + Math.cos(i / 4) * 3).toFixed(3)),
   };
 });
 
@@ -49,7 +49,7 @@ export default function PricesScreen() {
         router.replace('/login');
         return;
       }
-      setError(err.detail || 'Unable to load price history');
+      setError('⚠ Unable to load price history — showing offline data');
       setHistory(MOCK_DATA);
     } finally {
       setLoading(false);
@@ -120,7 +120,7 @@ export default function PricesScreen() {
             <View style={styles.priceRow}>
               <View>
                 <Text style={styles.priceUnit}>Current Price</Text>
-                <Text style={styles.priceValue}>${latest[selectedFuel].toFixed(2)}</Text>
+                <Text style={styles.priceValue}>Rs {latest[selectedFuel].toFixed(2)}</Text>
               </View>
               <Sparkline
                 data={currentData.map(d => d.value)}
@@ -149,15 +149,15 @@ export default function PricesScreen() {
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Avg</Text>
-            <Text style={styles.statValue}>${summary.avg.toFixed(2)}</Text>
+            <Text style={styles.statValue}>Rs {summary.avg.toFixed(2)}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Low</Text>
-            <Text style={styles.statValue}>${summary.min.toFixed(2)}</Text>
+            <Text style={styles.statValue}>Rs {summary.min.toFixed(2)}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>High</Text>
-            <Text style={styles.statValue}>${summary.max.toFixed(2)}</Text>
+            <Text style={styles.statValue}>Rs {summary.max.toFixed(2)}</Text>
           </View>
         </View>
 
@@ -181,11 +181,11 @@ export default function PricesScreen() {
                 <View style={styles.historyBars}>
                   <View style={styles.historyBarGroup}>
                     <View style={[styles.historyBar, styles.petrolBar, { flex: day.petrol }]} />
-                    <Text style={styles.historyPrice}>${day.petrol.toFixed(3)}</Text>
+                    <Text style={styles.historyPrice}>Rs {day.petrol.toFixed(3)}</Text>
                   </View>
                   <View style={styles.historyBarGroup}>
                     <View style={[styles.historyBar, styles.dieselBar, { flex: day.diesel }]} />
-                    <Text style={styles.historyPrice}>${day.diesel.toFixed(3)}</Text>
+                    <Text style={styles.historyPrice}>Rs {day.diesel.toFixed(3)}</Text>
                   </View>
                 </View>
               </View>

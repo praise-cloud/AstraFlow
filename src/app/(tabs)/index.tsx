@@ -9,6 +9,14 @@ import { Sparkline } from '@/components/Sparkline';
 
 type DashboardData = {
   current_price: { petrol: number; diesel: number; currency: string; unit: string };
+  global_crude?: {
+    brent_usd: number | null;
+    wti_usd: number | null;
+    diesel_global_usd: number | null;
+    gasoline_global_usd: number | null;
+    updated_at: string | null;
+    source: string;
+  };
   trend: { petrol: string; petrol_change: number; diesel: string; diesel_change: number };
   risk_level: string;
   impact_score: string;
@@ -29,7 +37,12 @@ type OilNews = {
 };
 
 const MOCK_DATA: DashboardData = {
-  current_price: { petrol: 1.64, diesel: 1.78, currency: 'USD', unit: 'L' },
+  current_price: { petrol: 64.25, diesel: 71.25, currency: 'MUR', unit: 'L' },
+  global_crude: {
+    brent_usd: 72.39, wti_usd: 68.15,
+    diesel_global_usd: 3.13, gasoline_global_usd: 2.98,
+    updated_at: new Date().toISOString(), source: 'OilPriceAPI',
+  },
   trend: { petrol: 'down', petrol_change: 0.2, diesel: 'up', diesel_change: 0.5 },
   risk_level: 'Moderate',
   impact_score: 'Medium',
@@ -57,6 +70,14 @@ function makeSparkline(current: number, trend: string, change: number): number[]
     arr.push(parseFloat((current - current * trendVal * pct + (Math.random() - 0.5) * 0.01).toFixed(3)));
   }
   return arr;
+}
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  MUR: 'Rs', USD: '$', EUR: '€', GBP: '£',
+};
+
+function currencySymbol(code: string | undefined): string {
+  return CURRENCY_SYMBOLS[code ?? ''] || code || '$';
 }
 
 function SkeletonBlock({ width, height, style }: { width?: number | string; height: number; style?: any }) {
@@ -197,7 +218,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.priceBody}>
                   <Text style={styles.priceValue}>
-                    ${data!.current_price.petrol.toFixed(2)}
+                    {currencySymbol(data!.current_price.currency)} {data!.current_price.petrol.toFixed(2)}
                     <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
                   </Text>
                   <Sparkline
@@ -224,7 +245,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.priceBody}>
                   <Text style={styles.priceValue}>
-                    ${data!.current_price.diesel.toFixed(2)}
+                    {currencySymbol(data!.current_price.currency)} {data!.current_price.diesel.toFixed(2)}
                     <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
                   </Text>
                   <Sparkline
@@ -263,17 +284,25 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity style={styles.surveyCard} onPress={() => router.push('/survey')}>
-                <View style={styles.surveyIconRow}>
-                  <Text style={styles.surveyIcon}>📋</Text>
-                  <Text style={styles.surveyBadge}>2 min</Text>
+              {data!.global_crude?.brent_usd && (
+                <View style={styles.globalCrudeCard}>
+                  <Text style={styles.globalCrudeTitle}>🌍 Global Crude Benchmark</Text>
+                  <View style={styles.globalCrudeRow}>
+                    <View style={styles.globalCrudeItem}>
+                      <Text style={styles.globalCrudeLabel}>Brent</Text>
+                      <Text style={styles.globalCrudeValue}>${data!.global_crude.brent_usd.toFixed(2)}</Text>
+                      <Text style={styles.globalCrudeUnit}>/bbl</Text>
+                    </View>
+                    <View style={styles.globalCrudeDivider} />
+                    <View style={styles.globalCrudeItem}>
+                      <Text style={styles.globalCrudeLabel}>WTI</Text>
+                      <Text style={styles.globalCrudeValue}>${data!.global_crude.wti_usd?.toFixed(2)}</Text>
+                      <Text style={styles.globalCrudeUnit}>/bbl</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.globalCrudeSource}>via {data!.global_crude.source}</Text>
                 </View>
-                <Text style={styles.surveyTitle}>Fuel Impact Survey</Text>
-                <Text style={styles.surveyText}>
-                  Tell us how fuel prices affect your business — help us personalize insights for you.
-                </Text>
-                <Text style={styles.surveyCTA}>Take Survey →</Text>
-              </TouchableOpacity>
+              )}
 
               <View style={styles.newsSection}>
                 <Text style={styles.newsSectionTitle}>Oil & Fuel Market — Mauritius</Text>
@@ -401,19 +430,7 @@ const styles = StyleSheet.create({
   },
   metricLabel: { fontSize: 12, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
   metricValue: { fontSize: 20, fontWeight: '700' },
-  surveyCard: {
-    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#003087',
-    padding: 20, gap: 8, borderLeftWidth: 4,
-  },
-  surveyIconRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  surveyIcon: { fontSize: 20 },
-  surveyBadge: {
-    fontSize: 10, fontWeight: '600', color: '#003087', backgroundColor: '#dbe1ff',
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, textTransform: 'uppercase',
-  },
-  surveyTitle: { fontSize: 18, fontWeight: '700', color: '#1a1c1e' },
-  surveyText: { fontSize: 14, color: '#444652', lineHeight: 20 },
-  surveyCTA: { fontSize: 14, fontWeight: '600', color: '#003087', marginTop: 4 },
+
   badge: {
     backgroundColor: '#dbe1ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
     marginLeft: 8,
@@ -437,6 +454,18 @@ const styles = StyleSheet.create({
   newsSource: { fontSize: 11, fontWeight: '600', color: '#003087' },
   newsDate: { fontSize: 11, color: '#747683' },
   newsRead: { fontSize: 13, fontWeight: '600', color: '#003087', marginTop: 4 },
+  globalCrudeCard: {
+    backgroundColor: '#0a1929', borderRadius: 12, padding: 16, gap: 12,
+    borderWidth: 1, borderColor: '#1a3a5c',
+  },
+  globalCrudeTitle: { fontSize: 13, fontWeight: '700', color: '#80bfff', textTransform: 'uppercase', letterSpacing: 0.5 },
+  globalCrudeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
+  globalCrudeItem: { alignItems: 'center', gap: 2 },
+  globalCrudeLabel: { fontSize: 12, fontWeight: '600', color: '#a0c4ff' },
+  globalCrudeValue: { fontSize: 22, fontWeight: '800', color: '#ffffff' },
+  globalCrudeUnit: { fontSize: 12, color: '#80bfff' },
+  globalCrudeDivider: { width: 1, height: 40, backgroundColor: '#1a3a5c' },
+  globalCrudeSource: { fontSize: 10, color: '#5a7a9a', textAlign: 'center' },
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end',
   },
