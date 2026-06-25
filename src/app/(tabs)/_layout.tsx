@@ -5,6 +5,7 @@ const TAB_ICONS: Record<string, string> = {
   index: '🏠',
   prices: '💰',
   predict: '🔮',
+  routes: '🗺️',
   profile: '👤',
 };
 
@@ -46,6 +47,12 @@ export default function TabLayout() {
         name="predict"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon name="predict" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="routes"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name="routes" focused={focused} />,
         }}
       />
       <Tabs.Screen

@@ -192,6 +192,64 @@ export const api = {
       request<{ push_enabled: boolean; alerts_enabled: boolean }>('/notifications/preferences'),
   },
 
+  routes: {
+    geocode: (q: string) =>
+      request<Array<{
+        display_name: string;
+        lat: number;
+        lng: number;
+      }>>(`/routes/geocode?q=${encodeURIComponent(q)}`),
+
+    plan: (data: {
+      origin: string;
+      destination: string;
+      origin_lat?: number;
+      origin_lng?: number;
+      destination_lat?: number;
+      destination_lng?: number;
+      fuel_type?: string;
+    }) =>
+      request<{
+        routes: Array<{
+          rank: number;
+          distance_km: number;
+          duration_min: number;
+          traffic_delay_min: number;
+          congestion: string;
+          polyline: string;
+          gas_stations: Array<{
+            id: number;
+            name: string;
+            lat: number;
+            lng: number;
+            brand: string;
+            operator: string;
+            distance_from_route_km: number;
+          }>;
+          fuel_cost_usd: number;
+          ai_score: number;
+          recommendation: string;
+          legs: Array<{
+            distance_km: number;
+            duration_min: number;
+            summary: string;
+          }>;
+        }>;
+        fuel_price_used: Record<string, number>;
+      }>('/routes/plan', { method: 'POST', body: JSON.stringify(data) }),
+
+    gasStations: (lat: number, lng: number, radius: number = 5) =>
+      request<Array<{
+        id: number;
+        name: string;
+        lat: number;
+        lng: number;
+        brand: string;
+        operator: string;
+        distance_km: number;
+      }>>(`/routes/gas-stations?lat=${lat}&lng=${lng}&radius=${radius}`),
+  },
+
   news: {
     list: () =>
       request<Array<{
