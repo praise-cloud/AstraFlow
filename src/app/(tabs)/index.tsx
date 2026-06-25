@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Animated, Modal } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Animated, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
@@ -62,15 +62,26 @@ const IMPACT_COLORS: Record<string, string> = {
   Low: '#2e7d32', Medium: '#f57c00', High: '#d32f2f',
 };
 
-function makeSparklineSmooth(current: number, trend: string, change: number, points: number = 14): number[] {
+function formatDate(d: Date): string {
+  return d.toLocaleDateString('en-MU', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function makeSparkline(current: number, trend: string, change: number): number[] {
   const arr: number[] = [];
-  for (let i = points; i >= 0; i--) {
-    const pct = i / points;
+  for (let i = 6; i >= 0; i--) {
+    const pct = i / 6;
     const trendVal = trend === 'up' ? change / 100 : -change / 100;
-    const noise = (Math.random() - 0.5) * 0.008;
-    arr.push(parseFloat((current - current * trendVal * pct * pct + noise).toFixed(3)));
+    arr.push(parseFloat((current - current * trendVal * pct + (Math.random() - 0.5) * 0.01).toFixed(3)));
   }
   return arr;
+}
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  MUR: 'Rs', USD: '$', EUR: '€', GBP: '£',
+};
+
+function currencySymbol(code: string | undefined): string {
+  return CURRENCY_SYMBOLS[code ?? ''] || code || '$';
 }
 
 function SkeletonBlock({ width, height, style }: { width?: number | string; height: number; style?: any }) {
@@ -108,6 +119,12 @@ export default function HomeScreen() {
   const [news, setNews] = useState<OilNews[]>([]);
   const [selectedNews, setSelectedNews] = useState<OilNews | null>(null);
   const [newsLoading, setNewsLoading] = useState(true);
+
+  const [fuelLiters, setFuelLiters] = useState('45');
+  const [lastRefill, setLastRefill] = useState<Date | null>(null);
+  const [kmDriven, setKmDriven] = useState('0');
+  const [showRefillModal, setShowRefillModal] = useState(false);
+  const [refillAmount, setRefillAmount] = useState('');
 
   const fetchDashboard = useCallback(async () => {
     setError(null);
@@ -197,7 +214,7 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.priceGrid}>
-              <View style={[styles.priceCard, { borderTopColor: '#003087', borderTopWidth: 3 }]}>
+              <View style={styles.priceCard}>
                 <View style={styles.priceHeader}>
                   <Text style={styles.priceLabel}>Petrol</Text>
                   <View style={styles.trendRow}>
@@ -205,29 +222,26 @@ export default function HomeScreen() {
                       {data!.trend.petrol === 'up' ? '↑' : '↓'}
                     </Text>
                     <Text style={data!.trend.petrol === 'up' ? styles.trendUpText : styles.trendDownText}>
-                      {data!.trend.petrol_change}%
+                      {data!.trend.petrol_change}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.priceBody}>
-                  <View>
-                    <Text style={styles.priceValue}>
-                      Rs {data!.current_price.petrol.toFixed(2)}
-                      <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
-                    </Text>
-                    <Text style={styles.priceSub}>per litre</Text>
-                  </View>
+                  <Text style={styles.priceValue}>
+                    {currencySymbol(data!.current_price.currency)} {data!.current_price.petrol.toFixed(2)}
+                    <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
+                  </Text>
                   <Sparkline
-                    data={makeSparklineSmooth(data!.current_price.petrol, data!.trend.petrol, data!.trend.petrol_change)}
-                    width={90}
-                    height={36}
+                    data={makeSparkline(data!.current_price.petrol, data!.trend.petrol, data!.trend.petrol_change)}
                     color="#003087"
-                    strokeWidth={2}
                   />
+                </View>
+                <View style={styles.badgeLow}>
+                  <Text style={styles.badgeLowText}>Lowest 7-day</Text>
                 </View>
               </View>
 
-              <View style={[styles.priceCard, { borderTopColor: '#d32f2f', borderTopWidth: 3 }]}>
+              <View style={styles.priceCard}>
                 <View style={styles.priceHeader}>
                   <Text style={styles.priceLabel}>Diesel</Text>
                   <View style={styles.trendRow}>
@@ -235,25 +249,22 @@ export default function HomeScreen() {
                       {data!.trend.diesel === 'up' ? '↑' : '↓'}
                     </Text>
                     <Text style={data!.trend.diesel === 'up' ? styles.trendUpText : styles.trendDownText}>
-                      {data!.trend.diesel_change}%
+                      {data!.trend.diesel_change}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.priceBody}>
-                  <View>
-                    <Text style={styles.priceValue}>
-                      Rs {data!.current_price.diesel.toFixed(2)}
-                      <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
-                    </Text>
-                    <Text style={styles.priceSub}>per litre</Text>
-                  </View>
+                  <Text style={styles.priceValue}>
+                    {currencySymbol(data!.current_price.currency)} {data!.current_price.diesel.toFixed(2)}
+                    <Text style={styles.priceUnit}>/{data!.current_price.unit}</Text>
+                  </Text>
                   <Sparkline
-                    data={makeSparklineSmooth(data!.current_price.diesel, data!.trend.diesel, data!.trend.diesel_change)}
-                    width={90}
-                    height={36}
+                    data={makeSparkline(data!.current_price.diesel, data!.trend.diesel, data!.trend.diesel_change)}
                     color="#d32f2f"
-                    strokeWidth={2}
                   />
+                </View>
+                <View style={styles.badgeRising}>
+                  <Text style={styles.badgeRisingText}>Rising</Text>
                 </View>
               </View>
             </View>
@@ -265,6 +276,42 @@ export default function HomeScreen() {
               <View style={styles.insightContent}>
                 <Text style={styles.insightTitle}>Market Update</Text>
                 <Text style={styles.insightText}>{data!.market_update}</Text>
+              </View>
+            </View>
+
+            <View style={styles.fuelUsageCard}>
+              <View style={styles.fuelUsageHeader}>
+                <Text style={styles.fuelUsageTitle}>Your Fuel Usage</Text>
+                <TouchableOpacity style={styles.refillBtn} onPress={() => setShowRefillModal(true)}>
+                  <Text style={styles.refillBtnText}>+ Refill</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.fuelUsageGrid}>
+                <View style={styles.fuelUsageItem}>
+                  <Text style={styles.fuelUsageLabel}>Daily usage</Text>
+                  <Text style={styles.fuelUsageValue}>{fuelLiters} L</Text>
+                </View>
+                <View style={styles.fuelUsageItem}>
+                  <Text style={styles.fuelUsageLabel}>Est. driven</Text>
+                  <Text style={styles.fuelUsageValue}>{kmDriven || 30} km/day</Text>
+                </View>
+                <View style={styles.fuelUsageItem}>
+                  <Text style={styles.fuelUsageLabel}>Last refill</Text>
+                  <Text style={styles.fuelUsageValue}>{lastRefill ? formatDate(lastRefill) : '—'}</Text>
+                </View>
+              </View>
+              <View style={styles.fuelUsageRow}>
+                <Text style={styles.fuelUsageHint}>Daily consumption</Text>
+                <View style={styles.fuelInputRow}>
+                  <TextInput
+                    style={styles.fuelInput}
+                    value={fuelLiters}
+                    onChangeText={setFuelLiters}
+                    keyboardType="numeric"
+                    placeholder="45"
+                  />
+                  <Text style={styles.fuelInputUnit}>L</Text>
+                </View>
               </View>
             </View>
 
@@ -336,6 +383,42 @@ export default function HomeScreen() {
             </>
           )}
         </ScrollView>
+
+        <Modal visible={showRefillModal} transparent animationType="slide" onRequestClose={() => setShowRefillModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Log Refill</Text>
+                <TouchableOpacity onPress={() => setShowRefillModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.modalBody}>
+                <Text style={styles.refillLabel}>Liters refilled</Text>
+                <TextInput
+                  style={styles.refillInput}
+                  value={refillAmount}
+                  onChangeText={setRefillAmount}
+                  keyboardType="numeric"
+                  placeholder="e.g. 45"
+                  autoFocus
+                />
+                <TouchableOpacity
+                  style={[styles.refillSubmit, !refillAmount && { opacity: 0.5 }]}
+                  disabled={!refillAmount}
+                  onPress={() => {
+                    setFuelLiters(refillAmount);
+                    setLastRefill(new Date());
+                    setShowRefillModal(false);
+                    setRefillAmount('');
+                  }}
+                >
+                  <Text style={styles.refillSubmitText}>Log Refill</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <Modal
           visible={selectedNews !== null}
@@ -409,7 +492,40 @@ const styles = StyleSheet.create({
   trendUpText: { fontSize: 12, color: '#d32f2f' },
   priceValue: { fontSize: 24, fontWeight: '700', color: '#1a1c1e' },
   priceUnit: { fontSize: 12, fontWeight: '400', color: '#747683' },
-  priceSub: { fontSize: 10, color: '#747683', marginTop: -2 },
+  badgeLow: { alignSelf: 'flex-start', backgroundColor: 'rgba(219,225,255,0.3)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  badgeLowText: { fontSize: 10, fontWeight: '600', color: '#003087', textTransform: 'uppercase' },
+  badgeRising: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,218,214,0.4)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  badgeRisingText: { fontSize: 10, fontWeight: '600', color: '#d32f2f', textTransform: 'uppercase' },
+  fuelUsageCard: {
+    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
+    padding: 16, gap: 12,
+  },
+  fuelUsageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  fuelUsageTitle: { fontSize: 14, fontWeight: '700', color: '#1a1c1e' },
+  refillBtn: { backgroundColor: '#003087', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  refillBtnText: { fontSize: 12, fontWeight: '600', color: '#ffffff' },
+  fuelUsageGrid: { flexDirection: 'row', gap: 8 },
+  fuelUsageItem: { flex: 1, alignItems: 'center', gap: 2 },
+  fuelUsageLabel: { fontSize: 9, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
+  fuelUsageValue: { fontSize: 14, fontWeight: '700', color: '#1a1c1e' },
+  fuelUsageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  fuelUsageHint: { fontSize: 12, color: '#747683' },
+  fuelInputRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  fuelInput: {
+    width: 60, height: 32, borderWidth: 1, borderColor: '#c4c6d4', borderRadius: 6,
+    paddingHorizontal: 8, fontSize: 14, color: '#1a1c1e', textAlign: 'center',
+  },
+  fuelInputUnit: { fontSize: 12, color: '#747683' },
+  refillLabel: { fontSize: 14, fontWeight: '600', color: '#444652' },
+  refillInput: {
+    height: 48, borderWidth: 1, borderColor: '#c4c6d4', borderRadius: 8,
+    paddingHorizontal: 16, fontSize: 16, backgroundColor: '#f9f9fc', color: '#1a1c1e',
+  },
+  refillSubmit: {
+    height: 48, backgroundColor: '#003087', borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  refillSubmitText: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
   insightCard: {
     backgroundColor: '#f3f3f6', borderRadius: 8, padding: 16,
     flexDirection: 'row', gap: 16, borderWidth: 1, borderColor: 'rgba(196,198,212,0.3)',
