@@ -1,20 +1,7 @@
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { getToken, clearToken } from './auth';
 import { setCache, getCache, removeCache } from './cache';
 
-function getDevApiBase(): string {
-  const hostUri = Constants.expoGoConfig?.hostUri || Constants.manifest?.hostUri;
-  if (hostUri) {
-    const ip = hostUri.split(':')[0];
-    return `http://${ip}:8000/api`;
-  }
-  return Platform.OS === 'android'
-    ? 'http://10.0.2.2:8000/api'
-    : 'http://localhost:8000/api';
-}
-
-export const API_BASE = __DEV__ ? getDevApiBase() : 'https://astraflow-api-dryi.onrender.com/api';
+const API_BASE = 'https://astraflow-api-dryi.onrender.com/api';
 
 export class ApiError extends Error {
   status: number;
