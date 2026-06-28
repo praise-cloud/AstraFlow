@@ -94,10 +94,14 @@ export default function RoutesScreen() {
 
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      const loc = await Location.getCurrentPositionAsync({});
-      setGpsCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const loc = await Location.getCurrentPositionAsync({});
+        setGpsCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+      } catch {
+        // Location unavailable or denied — user can tap GPS button to retry
+      }
     })();
   }, []);
 

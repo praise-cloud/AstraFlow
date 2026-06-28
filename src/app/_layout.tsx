@@ -6,7 +6,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { azureClarityConfig } from '@/theme/azure-clarity';
-import { isAuthenticated } from '@/services/auth';
+import { isAuthenticated, restoreAuth } from '@/services/auth';
 import { registerForPushNotifications } from '@/services/notifications';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useAppColor } from '@/hooks/useAppColor';
@@ -19,6 +19,7 @@ function useProtectedRoute() {
   useEffect(() => {
     if (checked) return;
     const check = async () => {
+      await restoreAuth();
       const authenticated = await Promise.resolve(isAuthenticated());
       const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
 
