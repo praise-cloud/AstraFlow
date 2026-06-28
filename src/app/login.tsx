@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View, Text, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, View, Text, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
+import { useAppColor } from '@/hooks/useAppColor';
 import { api } from '@/services/api';
 import { setToken, setUser } from '@/services/auth';
 
@@ -11,6 +13,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const colors = useAppColor();
 
   const handleLogin = async () => {
     if (!email.trim()) {
@@ -34,29 +38,29 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.brandSection}>
-            <View style={styles.logo}>
-              <Text style={styles.logoIcon}>⛽</Text>
+            <View style={[styles.logo, { backgroundColor: colors.accentPetrol }]}>
+              <MaterialCommunityIcons name="gas-station-outline" size={48} color={colors.textWhite} />
             </View>
-            <Text style={styles.brandName}>AstraFlow</Text>
-            <Text style={styles.tagline}>
+            <Text style={[styles.brandName, { color: colors.accentPetrol }]}>AstraFlow</Text>
+            <Text style={[styles.tagline, { color: colors.textSecondary }]}>
               Sign in to access your fuel insights and predictions.
             </Text>
           </View>
 
-          <View style={styles.formCard}>
+          <View style={[styles.formCard, { backgroundColor: colors.bgCard, borderColor: colors.borderInput }]}>
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>EMAIL ADDRESS</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>EMAIL ADDRESS</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
                 placeholder="name@company.com"
-                placeholderTextColor="#747683"
+                placeholderTextColor={colors.textMuted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -67,47 +71,47 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>PASSWORD</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>PASSWORD</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
-                  style={styles.passwordInput}
+                  style={[styles.passwordInput, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
                   placeholder="Enter your password"
-                  placeholderTextColor="#747683"
+                  placeholderTextColor={colors.textMuted}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   editable={!loading}
                 />
-                <TouchableOpacity
+                <Pressable
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                   disabled={loading}
                 >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁' : '👁‍🗨'}</Text>
-                </TouchableOpacity>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
+                </Pressable>
               </View>
             </View>
 
             <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
+              style={[styles.primaryButton, loading && styles.buttonDisabled, { backgroundColor: colors.accentPetrol }]}
               onPress={handleLogin}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color={colors.textWhite} />
               ) : (
                 <>
-                  <Text style={styles.buttonText}>Sign In</Text>
-                  <Text style={styles.buttonArrow}>→</Text>
+                  <Text style={[styles.buttonText, { color: colors.textWhite }]}>Sign In</Text>
+                  <Ionicons name="arrow-forward" size={20} color={colors.textWhite} />
                 </>
               )}
             </TouchableOpacity>
           </View>
 
           <View style={styles.footerSection}>
-            <Text style={styles.footerText}>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
               Don't have an account?{' '}
-              <Text style={styles.linkText} onPress={() => router.push('/register')}>
+              <Text style={[styles.linkText, { color: colors.accentPetrol }]} onPress={() => router.push('/register')}>
                 Create one
               </Text>
             </Text>
@@ -121,7 +125,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9fc',
   },
   flex: {
     flex: 1,
@@ -139,32 +142,24 @@ const styles = StyleSheet.create({
   logo: {
     width: 56,
     height: 56,
-    backgroundColor: '#003087',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
-  logoIcon: {
-    fontSize: 28,
-  },
   brandName: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#003087',
   },
   tagline: {
     fontSize: 14,
-    color: '#444652',
     textAlign: 'center',
     marginTop: 4,
     maxWidth: 280,
   },
   formCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#c4c6d4',
     padding: 24,
     gap: 16,
     maxWidth: 400,
@@ -177,19 +172,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#444652',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#c4c6d4',
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 14,
-    color: '#1a1c1e',
-    backgroundColor: '#ffffff',
   },
   passwordContainer: {
     position: 'relative',
@@ -197,13 +188,10 @@ const styles = StyleSheet.create({
   passwordInput: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#c4c6d4',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingRight: 48,
     fontSize: 14,
-    color: '#1a1c1e',
-    backgroundColor: '#ffffff',
   },
   eyeButton: {
     position: 'absolute',
@@ -214,12 +202,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  eyeIcon: {
-    fontSize: 18,
-  },
   primaryButton: {
     height: 48,
-    backgroundColor: '#003087',
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -233,11 +217,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
-  },
-  buttonArrow: {
-    fontSize: 18,
-    color: '#ffffff',
   },
   footerSection: {
     alignItems: 'center',
@@ -245,10 +224,8 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#444652',
   },
   linkText: {
-    color: '#003087',
     fontWeight: '600',
     textDecorationLine: 'underline',
   },

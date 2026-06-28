@@ -2,16 +2,18 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View, Text, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { api } from '@/services/api';
 import { setToken, setUser } from '@/services/auth';
+import { useAppColor } from '@/hooks/useAppColor';
 
 const BUSINESS_TYPES = [
-  { id: 'restaurant', label: 'Restaurant', icon: '🍽️' },
-  { id: 'taxi', label: 'Taxi Driver', icon: '🚕' },
-  { id: 'delivery', label: 'Delivery Business', icon: '📦' },
-  { id: 'retail', label: 'Retail Shop', icon: '🏪' },
-  { id: 'logistics', label: 'Logistics Company', icon: '🚛' },
+  { id: 'restaurant', label: 'Restaurant', icon: 'restaurant-outline' },
+  { id: 'taxi', label: 'Taxi Driver', icon: 'car-outline' },
+  { id: 'delivery', label: 'Delivery Business', icon: 'cube-outline' },
+  { id: 'retail', label: 'Retail Shop', icon: 'storefront-outline' },
+  { id: 'logistics', label: 'Logistics Company', icon: 'bus-outline' },
 ];
 
 export default function RegisterScreen() {
@@ -21,6 +23,8 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [businessType, setBusinessType] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const colors = useAppColor();
 
   const handleRegister = async () => {
     if (!fullName || !email || !password || !businessType) {
@@ -45,40 +49,40 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.brandSection}>
-            <View style={styles.logo}>
-              <Text style={styles.logoIcon}>⛽</Text>
+            <View style={[styles.logo, { backgroundColor: colors.accentPetrol }]}>
+              <MaterialCommunityIcons name="gas-station-outline" size={48} color={colors.textWhite} />
             </View>
-            <Text style={styles.brandName}>AstraFlow</Text>
-            <Text style={styles.tagline}>
+            <Text style={[styles.brandName, { color: colors.accentPetrol }]}>AstraFlow</Text>
+            <Text style={[styles.tagline, { color: colors.textSecondary }]}>
               Create your account to start predicting energy flows and price shifts.
             </Text>
           </View>
 
-          <View style={styles.formCard}>
+          <View style={[styles.formCard, { backgroundColor: colors.bgCard, borderColor: colors.borderInput }]}>
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>FULL NAME</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>FULL NAME</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
                 placeholder="Enter your name"
-                placeholderTextColor="#747683"
+                placeholderTextColor={colors.textMuted}
                 value={fullName}
                 onChangeText={setFullName}
               />
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>EMAIL ADDRESS</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>EMAIL ADDRESS</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
                 placeholder="name@company.com"
-                placeholderTextColor="#747683"
+                placeholderTextColor={colors.textMuted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -87,12 +91,12 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>PASSWORD</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>PASSWORD</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
-                  style={styles.passwordInput}
+                  style={[styles.passwordInput, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
                   placeholder="Min. 8 characters"
-                  placeholderTextColor="#747683"
+                  placeholderTextColor={colors.textMuted}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -101,28 +105,29 @@ export default function RegisterScreen() {
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁' : '👁‍🗨'}</Text>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>BUSINESS TYPE</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>BUSINESS TYPE</Text>
               <View style={styles.businessGrid}>
                 {BUSINESS_TYPES.map((bt) => (
                   <TouchableOpacity
                     key={bt.id}
                     style={[
                       styles.businessChip,
-                      businessType === bt.id && styles.businessChipSelected,
+                      { borderColor: businessType === bt.id ? colors.accentPetrol : colors.borderInput, backgroundColor: businessType === bt.id ? colors.bgPrimaryLight : colors.bgSurface },
                     ]}
                     onPress={() => setBusinessType(bt.id)}
                   >
-                    <Text style={styles.businessIcon}>{bt.icon}</Text>
+                    <Ionicons name={bt.icon as any} size={24} color={businessType === bt.id ? colors.accentPetrol : colors.textMuted} />
                     <Text
                       style={[
                         styles.businessLabel,
                         businessType === bt.id && styles.businessLabelSelected,
+                        { color: businessType === bt.id ? colors.accentPetrol : colors.textSecondary },
                       ]}
                     >
                       {bt.label}
@@ -133,31 +138,31 @@ export default function RegisterScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
+              style={[styles.primaryButton, { backgroundColor: colors.accentPetrol }, loading && styles.buttonDisabled]}
               onPress={handleRegister}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color={colors.textWhite} />
               ) : (
                 <>
-                  <Text style={styles.buttonText}>Create Account</Text>
-                  <Text style={styles.buttonArrow}>→</Text>
+                  <Text style={[styles.buttonText, { color: colors.textWhite }]}>Create Account</Text>
+                  <Ionicons name="arrow-forward" size={20} color={colors.textWhite} />
                 </>
               )}
             </TouchableOpacity>
 
-            <Text style={styles.termsText}>
+            <Text style={[styles.termsText, { color: colors.textMuted }]}>
               By signing up, you agree to our{' '}
-              <Text style={styles.linkInline}>Terms of Service</Text> and{' '}
-              <Text style={styles.linkInline}>Privacy Policy</Text>.
+              <Text style={[styles.linkInline, { color: colors.accentPetrol }]}>Terms of Service</Text> and{' '}
+              <Text style={[styles.linkInline, { color: colors.accentPetrol }]}>Privacy Policy</Text>.
             </Text>
           </View>
 
           <View style={styles.footerSection}>
-            <Text style={styles.footerText}>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
               Already have an account?{' '}
-              <Text style={styles.linkText} onPress={() => router.back()}>
+              <Text style={[styles.linkText, { color: colors.accentPetrol }]} onPress={() => router.back()}>
                 Log in
               </Text>
             </Text>
@@ -171,7 +176,6 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9fc',
   },
   flex: {
     flex: 1,
@@ -189,34 +193,26 @@ const styles = StyleSheet.create({
   logo: {
     width: 56,
     height: 56,
-    backgroundColor: '#003087',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
-  logoIcon: {
-    fontSize: 28,
-  },
   brandName: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#003087',
     fontFamily: 'WorkSans',
   },
   tagline: {
     fontSize: 14,
-    color: '#444652',
     fontFamily: 'Inter',
     textAlign: 'center',
     marginTop: 4,
     maxWidth: 280,
   },
   formCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#c4c6d4',
     padding: 24,
     gap: 16,
     maxWidth: 400,
@@ -229,19 +225,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#444652',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#c4c6d4',
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 14,
-    color: '#1a1c1e',
-    backgroundColor: '#ffffff',
   },
   passwordContainer: {
     position: 'relative',
@@ -249,13 +241,10 @@ const styles = StyleSheet.create({
   passwordInput: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#c4c6d4',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingRight: 48,
     fontSize: 14,
-    color: '#1a1c1e',
-    backgroundColor: '#ffffff',
   },
   eyeButton: {
     position: 'absolute',
@@ -265,9 +254,6 @@ const styles = StyleSheet.create({
     width: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  eyeIcon: {
-    fontSize: 18,
   },
   businessGrid: {
     flexDirection: 'row',
@@ -282,28 +268,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#c4c6d4',
-    backgroundColor: '#f9f9fc',
-  },
-  businessChipSelected: {
-    borderColor: '#003087',
-    backgroundColor: '#dbe1ff',
-  },
-  businessIcon: {
-    fontSize: 16,
   },
   businessLabel: {
     fontSize: 13,
-    color: '#444652',
     fontWeight: '500',
   },
   businessLabelSelected: {
-    color: '#003087',
     fontWeight: '600',
   },
   primaryButton: {
     height: 48,
-    backgroundColor: '#003087',
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -317,20 +291,13 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
-  },
-  buttonArrow: {
-    fontSize: 18,
-    color: '#ffffff',
   },
   termsText: {
     fontSize: 12,
-    color: '#747683',
     textAlign: 'center',
     lineHeight: 18,
   },
   linkInline: {
-    color: '#003087',
     fontWeight: '600',
   },
   footerSection: {
@@ -339,11 +306,9 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#444652',
     fontFamily: 'Inter',
   },
   linkText: {
-    color: '#003087',
     fontWeight: '600',
     textDecorationLine: 'underline',
   },

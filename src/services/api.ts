@@ -1,7 +1,7 @@
 import { getToken, clearToken } from './auth';
 import { setCache, getCache, removeCache } from './cache';
 
-const API_BASE = 'https://astraflow-api-dryi.onrender.com/api';
+const API_BASE = __DEV__ ? 'http://localhost:8000/api' : 'https://astraflow-api-dryi.onrender.com/api';
 
 export class ApiError extends Error {
   status: number;

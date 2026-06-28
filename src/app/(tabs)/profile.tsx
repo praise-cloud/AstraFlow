@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { getUserAsync, clearToken } from '@/services/auth';
 import { api } from '@/services/api';
 import { registerForPushNotifications, unregisterPushNotifications } from '@/services/notifications';
+import { useAppColor } from '@/hooks/useAppColor';
+import { useTheme } from '@/context/ThemeContext';
 
 const BUSINESS_LABELS: Record<string, string> = {
   restaurant: 'Restaurant',
@@ -19,6 +22,8 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<{ id: string; email: string; full_name: string; business_type: string } | null>(null);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const colors = useAppColor();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     getUserAsync().then(setUser);
@@ -56,99 +61,126 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerIcon}>⛽</Text>
-          <Text style={styles.headerTitle}>AstraFlow</Text>
+          <MaterialCommunityIcons name="gas-station-outline" size={22} color={colors.accentPetrol} />
+          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>AstraFlow</Text>
         </View>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.brandHero}>
-          <View style={styles.brandHeroIcon}>
-            <Text style={styles.brandHeroEmoji}>⛽</Text>
+        <View style={[styles.brandHero, { backgroundColor: colors.bgInsight }]}>
+          <View style={[styles.brandHeroIcon, { backgroundColor: colors.accentPetrol }]}>
+            <MaterialCommunityIcons name="gas-station-outline" size={30} color={colors.textWhite} />
           </View>
-          <Text style={styles.brandHeroTitle}>AstraFlow</Text>
-          <Text style={styles.brandHeroTagline}>Intelligent Fuel Insights</Text>
+          <Text style={[styles.brandHeroTitle, { color: colors.accentPetrol }]}>AstraFlow</Text>
+          <Text style={[styles.brandHeroTagline, { color: colors.textSecondary }]}>Intelligent Fuel Insights</Text>
         </View>
 
         <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.full_name ? user.full_name.charAt(0).toUpperCase() : '👤'}
-            </Text>
-          </View>
-          <Text style={styles.name}>{user?.full_name || 'User'}</Text>
-          <Text style={styles.email}>{user?.email || ''}</Text>
+          {user?.full_name ? (
+            <View style={[styles.avatar, { backgroundColor: colors.accentPetrol }]}>
+              <Text style={[styles.avatarText, { color: colors.textWhite }]}>
+                {user.full_name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          ) : (
+            <Ionicons name="person-circle-outline" size={60} color={colors.accentPetrol} />
+          )}
+          <Text style={[styles.name, { color: colors.textPrimary }]}>{user?.full_name || 'User'}</Text>
+          <Text style={[styles.email, { color: colors.textMuted }]}>{user?.email || ''}</Text>
           {user?.business_type && (
-            <View style={styles.businessTag}>
-              <Text style={styles.businessTagText}>
+            <View style={[styles.businessTag, { backgroundColor: colors.bgPrimaryLight }]}>
+              <Text style={[styles.businessTagText, { color: colors.accentPetrol }]}>
                 {BUSINESS_LABELS[user.business_type] || user.business_type}
               </Text>
             </View>
           )}
         </View>
 
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Account Information</Text>
+        <View style={[styles.infoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.infoTitle, { color: colors.textSecondary }]}>Account Information</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Full Name</Text>
-            <Text style={styles.infoValue}>{user?.full_name || '—'}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Full Name</Text>
+            <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{user?.full_name || '\u2014'}</Text>
           </View>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{user?.email || '—'}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Email</Text>
+            <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{user?.email || '\u2014'}</Text>
           </View>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Business Type</Text>
-            <Text style={styles.infoValue}>
-              {user?.business_type ? BUSINESS_LABELS[user.business_type] : '—'}
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Business Type</Text>
+            <Text style={[styles.infoValue, { color: colors.textPrimary }]}>
+              {user?.business_type ? BUSINESS_LABELS[user.business_type] : '\u2014'}
             </Text>
           </View>
         </View>
 
-        <View style={styles.notifCard}>
+        <View style={[styles.notifCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={styles.notifHeader}>
-            <Text style={styles.notifTitle}>Notifications</Text>
+            <View style={styles.notifHeaderLeft}>
+              <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />
+              <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>Notifications</Text>
+            </View>
             <Switch
               value={pushEnabled}
               onValueChange={handleTogglePush}
               disabled={toggling}
-              trackColor={{ false: '#c4c6d4', true: '#003087' }}
-              thumbColor="#ffffff"
+              trackColor={{ false: colors.borderInput, true: colors.accentPetrol }}
+              thumbColor={colors.textWhite}
             />
           </View>
-          <Text style={styles.notifText}>
+          <Text style={[styles.notifText, { color: colors.textMuted }]}>
             {pushEnabled
-              ? 'Price alerts are enabled — you will be notified of significant changes'
+              ? 'Price alerts are enabled \u2014 you will be notified of significant changes'
               : 'Enable price alerts to stay informed about fuel price changes'}
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.surveyCard} onPress={() => router.push('/survey')}>
-          <View style={styles.surveyIconRow}>
-            <Text style={styles.surveyIcon}>📋</Text>
-            <Text style={styles.surveyBadge}>2 min</Text>
+        <View style={[styles.notifCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <View style={styles.notifHeader}>
+            <View style={styles.notifHeaderLeft}>
+              <Ionicons name={theme === 'dark' ? 'moon' : 'sunny-outline'} size={20} color={colors.textSecondary} />
+              <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>Dark Mode</Text>
+            </View>
+            <Switch
+              value={theme === 'dark'}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.borderInput, true: colors.accentPetrol }}
+              thumbColor={colors.textWhite}
+            />
           </View>
-          <Text style={styles.surveyTitle}>Fuel Impact Survey</Text>
-          <Text style={styles.surveyText}>
+          <Text style={[styles.notifText, { color: colors.textMuted }]}>
+            {theme === 'dark'
+              ? 'Dark theme is active \u2014 easier on the eyes in low light'
+              : 'Switch to dark theme for a reduced glare experience'}
+          </Text>
+        </View>
+
+        <TouchableOpacity style={[styles.surveyCard, { backgroundColor: colors.bgCard, borderColor: colors.accentPetrol }]} onPress={() => router.push('/survey')}>
+          <View style={styles.surveyIconRow}>
+            <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.surveyBadge, { color: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}>2 min</Text>
+          </View>
+          <Text style={[styles.surveyTitle, { color: colors.textPrimary }]}>Fuel Impact Survey</Text>
+          <Text style={[styles.surveyText, { color: colors.textSecondary }]}>
             Tell us how fuel prices affect your business
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.appInfoCard}>
-          <Text style={styles.appInfoTitle}>AstraFlow</Text>
-          <Text style={styles.appInfoVersion}>Version 1.0.0</Text>
-          <Text style={styles.appInfoDesc}>
+        <View style={[styles.appInfoCard, { backgroundColor: colors.bgInsight }]}>
+          <Text style={[styles.appInfoTitle, { color: colors.accentPetrol }]}>AstraFlow</Text>
+          <Text style={[styles.appInfoVersion, { color: colors.textMuted }]}>Version 1.0.0</Text>
+          <Text style={[styles.appInfoDesc, { color: colors.textSecondary }]}>
             AI-Based Fuel Price Forecasting and Evaluation System for Mauritius
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
+        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.bgCard, borderColor: colors.trendUp }]} onPress={handleLogout}>
+          <Text style={[styles.logoutText, { color: colors.trendUp }]}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -158,7 +190,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9fc',
   },
   header: {
     flexDirection: 'row',
@@ -166,20 +197,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     height: 56,
-    backgroundColor: '#f9f9fc',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  headerIcon: {
-    fontSize: 22,
-  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#003087',
   },
   scroll: {
     flex: 1,
@@ -198,26 +224,21 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#003087',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 32,
-    color: '#ffffff',
     fontWeight: '700',
   },
   name: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1a1c1e',
   },
   email: {
     fontSize: 14,
-    color: '#747683',
   },
   businessTag: {
-    backgroundColor: '#dbe1ff',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 8,
@@ -225,20 +246,16 @@ const styles = StyleSheet.create({
   businessTagText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#003087',
   },
   infoCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#dee5ef',
     padding: 24,
     gap: 12,
   },
   infoTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#444652',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
@@ -250,19 +267,15 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#747683',
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1a1c1e',
   },
   divider: {
     height: 1,
-    backgroundColor: '#f3f3f6',
   },
   appInfoCard: {
-    backgroundColor: '#f0f4fa',
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
@@ -271,61 +284,98 @@ const styles = StyleSheet.create({
   appInfoTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#003087',
   },
   appInfoVersion: {
     fontSize: 12,
-    color: '#747683',
   },
   appInfoDesc: {
     fontSize: 12,
-    color: '#444652',
     textAlign: 'center',
     lineHeight: 18,
     marginTop: 4,
   },
   notifCard: {
-    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
-    padding: 20, gap: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 20,
+    gap: 8,
   },
-  notifHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  notifTitle: { fontSize: 15, fontWeight: '600', color: '#1a1c1e' },
-  notifText: { fontSize: 13, color: '#747683', lineHeight: 18 },
+  notifHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  notifHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  notifTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  notifText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
   surveyCard: {
-    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#003087',
-    padding: 20, gap: 8, borderLeftWidth: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderLeftWidth: 4,
+    padding: 20,
+    gap: 8,
   },
-  surveyIconRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  surveyIcon: { fontSize: 20 },
+  surveyIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   surveyBadge: {
-    fontSize: 10, fontWeight: '600', color: '#003087', backgroundColor: '#dbe1ff',
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, textTransform: 'uppercase',
+    fontSize: 10,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    textTransform: 'uppercase',
   },
-  surveyTitle: { fontSize: 16, fontWeight: '700', color: '#1a1c1e' },
-  surveyText: { fontSize: 14, color: '#444652', lineHeight: 20 },
+  surveyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  surveyText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
   logoutButton: {
     height: 48,
-    backgroundColor: '#ffffff',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ba1a1a',
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ba1a1a',
   },
   brandHero: {
-    alignItems: 'center', gap: 8, paddingVertical: 24,
-    backgroundColor: '#f0f4fa', borderRadius: 16, marginBottom: 8,
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 24,
+    borderRadius: 16,
+    marginBottom: 8,
   },
   brandHeroIcon: {
-    width: 64, height: 64, borderRadius: 32, backgroundColor: '#003087',
-    alignItems: 'center', justifyContent: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  brandHeroEmoji: { fontSize: 30 },
-  brandHeroTitle: { fontSize: 22, fontWeight: '700', color: '#003087' },
-  brandHeroTagline: { fontSize: 13, color: '#444652' },
+  brandHeroTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  brandHeroTagline: {
+    fontSize: 13,
+  },
 });

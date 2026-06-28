@@ -3,10 +3,13 @@ import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { azureClarityConfig } from '@/theme/azure-clarity';
 import { isAuthenticated } from '@/services/auth';
 import { registerForPushNotifications } from '@/services/notifications';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { useAppColor } from '@/hooks/useAppColor';
 
 function useProtectedRoute() {
   const segments = useSegments();
@@ -35,9 +38,11 @@ function useProtectedRoute() {
   return checked;
 }
 
-export default function RootLayout() {
+function RootLayoutInner() {
   const [isReady, setIsReady] = useState(false);
   const authChecked = useProtectedRoute();
+  const { theme } = useTheme();
+  const colors = useAppColor();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 1500);
@@ -47,22 +52,22 @@ export default function RootLayout() {
   if (!isReady || !authChecked) {
     return (
       <GluestackUIProvider config={azureClarityConfig}>
-        <View style={styles.splash}>
+        <View style={[styles.splashContainer, { backgroundColor: colors.bg }]}>
           <View style={styles.logoContainer}>
-            <View style={styles.logo}>
-              <Text style={styles.logoIcon}>⛽</Text>
+            <View style={[styles.logo, { backgroundColor: colors.bgPrimary }]}>
+              <MaterialCommunityIcons name="gas-station" size={80} color={colors.accentPetrol} />
             </View>
           </View>
-          <Text style={styles.brandName}>AstraFlow</Text>
-          <Text style={styles.tagline}>Intelligent Fuel Insights</Text>
+          <Text style={[styles.brandName, { color: colors.accentPetrol }]}>AstraFlow</Text>
+          <Text style={[styles.tagline, { color: colors.textSecondary }]}>Intelligent Fuel Insights</Text>
           <View style={styles.dots}>
-            <Text style={styles.dot}>.</Text>
-            <Text style={styles.dot}>.</Text>
-            <Text style={styles.dot}>.</Text>
+            <Text style={[styles.dot, { color: colors.accentPetrol }]}>.</Text>
+            <Text style={[styles.dot, { color: colors.accentPetrol }]}>.</Text>
+            <Text style={[styles.dot, { color: colors.accentPetrol }]}>.</Text>
           </View>
-          <Text style={styles.footer}>Secure & Efficient</Text>
+          <Text style={[styles.footer, { color: colors.textMuted }]}>Secure & Efficient</Text>
         </View>
-        <StatusBar style="light" />
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       </GluestackUIProvider>
     );
   }
@@ -75,15 +80,22 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="survey" options={{ presentation: 'modal' }} />
       </Stack>
-      <StatusBar style="dark" />
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
     </GluestackUIProvider>
   );
 }
 
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutInner />
+    </ThemeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
-  splash: {
+  splashContainer: {
     flex: 1,
-    backgroundColor: '#f9f9fc',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -93,23 +105,17 @@ const styles = StyleSheet.create({
   logo: {
     width: 80,
     height: 80,
-    backgroundColor: '#003087',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoIcon: {
-    fontSize: 40,
-  },
   brandName: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#003087',
     marginBottom: 4,
   },
   tagline: {
     fontSize: 14,
-    color: '#444652',
   },
   dots: {
     flexDirection: 'row',
@@ -118,7 +124,6 @@ const styles = StyleSheet.create({
   },
   dot: {
     fontSize: 24,
-    color: '#003087',
     opacity: 0.3,
   },
   footer: {
@@ -126,7 +131,6 @@ const styles = StyleSheet.create({
     bottom: 48,
     fontSize: 12,
     fontWeight: '600',
-    color: '#747683',
     letterSpacing: 2,
     textTransform: 'uppercase',
   },

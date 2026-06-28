@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useImperativeHandle } from 'react';
 import { Platform, View, Text, StyleSheet, ViewProps } from 'react-native';
 
 type LatLng = { latitude: number; longitude: number };
@@ -25,7 +25,6 @@ type PolylineProps = {
 };
 
 type MapViewProps = {
-  ref?: React.Ref<any>;
   style?: any;
   initialRegion?: Region;
   showsUserLocation?: boolean;
@@ -33,16 +32,17 @@ type MapViewProps = {
   children?: React.ReactNode;
 };
 
-type MapViewHandle = {
+export type MapViewHandle = {
   animateToRegion?: (region: Region, duration?: number) => void;
 };
 
 const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
 
-let NativeMapView: any = View;
-let NativeMarker: any = View;
-let NativePolyline: any = View;
+let NativeMapView: any = null;
+let NativeMarker: any = null;
+let NativePolyline: any = null;
 let PROVIDER_GOOGLE: any = null;
+let mapLoaded = false;
 
 if (isNative) {
   try {
@@ -51,19 +51,40 @@ if (isNative) {
     NativeMarker = Maps.Marker;
     NativePolyline = Maps.Polyline;
     PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
-  } catch {
-    console.warn('react-native-maps not available on native');
+    mapLoaded = true;
+  } catch (e) {
+    console.warn('react-native-maps failed to load:', e);
   }
 }
 
 const MapViewComponent = React.forwardRef<MapViewHandle, MapViewProps>(
   ({ style, initialRegion, showsUserLocation, showsTraffic, children, ...props }, ref) => {
-    if (isNative) {
+    const [loadFailed] = useState(!mapLoaded);
+    const nativeRef = React.useRef<any>(null);
+
+    useImperativeHandle(ref, () => ({
+      animateToRegion: (region: Region, duration?: number) => {
+        if (nativeRef.current?.animateToRegion) {
+          nativeRef.current.animateToRegion(region, duration);
+        }
+      },
+    }));
+
+    if (isNative && loadFailed) {
+      return (
+        <View style={[styles.fallback, style]}>
+          <Text style={styles.fallbackTitle}>Map Unavailable</Text>
+          <Text style={styles.fallbackText}>The map library could not be loaded.</Text>
+        </View>
+      );
+    }
+
+    if (isNative && NativeMapView) {
       return React.createElement(
         NativeMapView,
         {
           ...props,
-          ref,
+          ref: nativeRef,
           style,
           initialRegion,
           showsUserLocation,
@@ -75,13 +96,12 @@ const MapViewComponent = React.forwardRef<MapViewHandle, MapViewProps>(
 
     if (!initialRegion) {
       return (
-        <View style={[styles.webFallback, style]}>
-          <Text style={styles.webFallbackText}>Map</Text>
+        <View style={[styles.fallback, style]}>
+          <Text style={styles.fallbackTitle}>Map</Text>
         </View>
       );
     }
 
-    const zoom = 12;
     const lat = initialRegion.latitude;
     const lng = initialRegion.longitude;
     const src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.1},${lat - 0.1},${lng + 0.1},${lat + 0.1}&layer=mapnik&marker=${lat},${lng}`;
@@ -100,14 +120,14 @@ const MapViewComponent = React.forwardRef<MapViewHandle, MapViewProps>(
 );
 
 const MarkerComponent: React.FC<MarkerProps & ViewProps> = (props) => {
-  if (isNative) {
+  if (isNative && NativeMarker) {
     return React.createElement(NativeMarker, props);
   }
   return null;
 };
 
 const PolylineComponent: React.FC<PolylineProps & ViewProps> = (props) => {
-  if (isNative) {
+  if (isNative && NativePolyline) {
     return React.createElement(NativePolyline, props);
   }
   return null;
@@ -119,15 +139,26 @@ export const Marker = MarkerComponent;
 export const Polyline = PolylineComponent;
 
 const styles = StyleSheet.create({
-  webFallback: {
-    backgroundColor: '#e8ecf1',
+  fallback: {
+    backgroundColor: '#1c1c22',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 24,
   },
-  webFallbackText: {
+  fallbackIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  fallbackTitle: {
     fontSize: 16,
-    color: '#747683',
     fontWeight: '600',
+    color: '#eeeef0',
+    marginBottom: 4,
+  },
+  fallbackText: {
+    fontSize: 12,
+    color: '#6a6a7a',
+    textAlign: 'center',
   },
   webContainer: {
     overflow: 'hidden',

@@ -1,4 +1,5 @@
 import Svg, { Path } from 'react-native-svg';
+import { useAppColor } from '@/hooks/useAppColor';
 
 interface SparklineProps {
   data: number[];
@@ -12,9 +13,11 @@ export function Sparkline({
   data,
   width = 60,
   height = 28,
-  color = '#003087',
+  color,
   strokeWidth = 2,
 }: SparklineProps) {
+  const colors = useAppColor();
+  const lineColor = color || colors.accentPetrol;
   if (data.length < 2) return null;
 
   const min = Math.min(...data) * 0.98;
@@ -28,7 +31,7 @@ export function Sparkline({
 
   return (
     <Svg width={width} height={height}>
-      <Path d={`M${points}`} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d={`M${points}`} fill="none" stroke={lineColor} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }

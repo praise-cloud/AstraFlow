@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { api } from '@/services/api';
 import { getUser } from '@/services/auth';
 import { Sparkline } from '@/components/Sparkline';
+import { useAppColor } from '@/hooks/useAppColor';
 
 type DashboardData = {
   current_price: { petrol: number; diesel: number; currency: string; unit: string };
@@ -55,10 +57,6 @@ const MOCK_DATA: DashboardData = {
   user_name: 'User',
 };
 
-const RISK_COLORS: Record<string, string> = {
-  Low: '#2e7d32', Moderate: '#f57c00', High: '#d32f2f',
-};
-
 function formatDate(d: string | Date): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return date.toLocaleDateString('en-MU', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -88,6 +86,7 @@ function calcImpactPercent(impact: string, change: number): number {
 }
 
 export default function HomeScreen() {
+  const colors = useAppColor();
   const [data, setData] = useState<DashboardData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -154,246 +153,262 @@ export default function HomeScreen() {
   const user = getUser();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>AstraFlow</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>🇲🇺 Mauritius</Text>
+          <MaterialCommunityIcons name="gas-station-outline" size={22} color={colors.accentPetrol} />
+          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>AstraFlow</Text>
+          <View style={[styles.badge, { backgroundColor: colors.badgeBg }]}>
+            <Ionicons name="flag-outline" size={14} color={colors.badgeText} />
+            <Text style={[styles.badgeText, { color: colors.badgeText }]}> Mauritius</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
-          <Text style={styles.profileIcon}>👤</Text>
+          <Ionicons name="person-outline" size={22} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentPetrol} />}
       >
         {loading && !data ? (
           <View style={styles.scrollContent}>
-            <View style={[styles.bannerCard, { gap: 6 }]}>
-              <View style={{ width: 80, height: 10, backgroundColor: '#e2e2e5', borderRadius: 4 }} />
-              <View style={{ width: '60%', height: 18, backgroundColor: '#e2e2e5', borderRadius: 4 }} />
+            <View style={[styles.bannerCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
+              <View style={{ width: 80, height: 10, backgroundColor: colors.bgSkeleton, borderRadius: 4 }} />
+              <View style={{ width: '60%', height: 18, backgroundColor: colors.bgSkeleton, borderRadius: 4 }} />
             </View>
             <View style={styles.priceGrid}>
-              <View style={styles.priceCard}><View style={{ height: 14, width: '50%', backgroundColor: '#e2e2e5', borderRadius: 4 }} /><View style={{ height: 22, width: '70%', backgroundColor: '#e2e2e5', borderRadius: 4, marginTop: 6 }} /></View>
-              <View style={styles.priceCard}><View style={{ height: 14, width: '50%', backgroundColor: '#e2e2e5', borderRadius: 4 }} /><View style={{ height: 22, width: '70%', backgroundColor: '#e2e2e5', borderRadius: 4, marginTop: 6 }} /></View>
+              <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                <View style={{ height: 14, width: '50%', backgroundColor: colors.bgSkeleton, borderRadius: 4 }} />
+                <View style={{ height: 22, width: '70%', backgroundColor: colors.bgSkeleton, borderRadius: 4, marginTop: 6 }} />
+              </View>
+              <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                <View style={{ height: 14, width: '50%', backgroundColor: colors.bgSkeleton, borderRadius: 4 }} />
+                <View style={{ height: 22, width: '70%', backgroundColor: colors.bgSkeleton, borderRadius: 4, marginTop: 6 }} />
+              </View>
             </View>
           </View>
         ) : data ? (
           <>
             {error && (
-              <TouchableOpacity style={styles.errorBanner} onPress={fetchDashboard}>
-                <Text style={styles.errorText}>{error}</Text>
-                <Text style={styles.retryText}>Tap to retry</Text>
+              <TouchableOpacity style={[styles.errorBanner, { backgroundColor: colors.bgError }]} onPress={fetchDashboard}>
+                <Text style={[styles.errorText, { color: colors.textError }]}>{error}</Text>
+                <Text style={[styles.retryText, { color: colors.textError }]}>Tap to retry</Text>
               </TouchableOpacity>
             )}
 
-            <View style={styles.bannerCard}>
-              <View style={styles.bannerAccent} />
+            <View style={[styles.bannerCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
+              <View style={[styles.bannerAccent, { backgroundColor: colors.accentPetrol }]} />
               <View style={styles.bannerContent}>
-                <Text style={styles.bannerLabel}>Recommendation</Text>
-                <Text style={styles.bannerTitle}>{data.recommendation.title}</Text>
-                <Text style={styles.bannerText}>{data.recommendation.content}</Text>
+                <Text style={[styles.bannerLabel, { color: colors.accentPetrol }]}>Recommendation</Text>
+                <Text style={[styles.bannerTitle, { color: colors.textPrimary }]}>{data.recommendation.title}</Text>
+                <Text style={[styles.bannerText, { color: colors.textSecondary }]}>{data.recommendation.content}</Text>
               </View>
             </View>
 
             <View style={styles.priceGrid}>
-              <View style={[styles.priceCard, { borderTopColor: '#003087', borderTopWidth: 3 }]}>
+              <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentPetrol, borderTopWidth: 3 }]}>
                 <View style={styles.priceHeader}>
-                  <Text style={styles.priceLabel}>Petrol</Text>
+                  <Text style={[styles.priceLabel, { color: colors.textMuted }]}>Petrol</Text>
                   <View style={styles.trendRow}>
-                    <Text style={data.trend.petrol === 'up' ? styles.trendUp : styles.trendDown}>
-                      {data.trend.petrol === 'up' ? '↑' : '↓'}
-                    </Text>
-                    <Text style={data.trend.petrol === 'up' ? styles.trendUpText : styles.trendDownText}>
+                    {data.trend.petrol === 'up' ? (
+                      <Ionicons name="arrow-up" size={13} color={colors.trendUp} />
+                    ) : (
+                      <Ionicons name="arrow-down" size={13} color={colors.trendDown} />
+                    )}
+                    <Text style={[data.trend.petrol === 'up' ? { color: colors.trendUp } : { color: colors.trendDown }, { fontSize: 12, fontWeight: '600' }]}>
                       {data.trend.petrol_change}%
                     </Text>
                   </View>
                 </View>
                 <View style={styles.priceBody}>
                   <View>
-                    <Text style={styles.priceValue}>
+                    <Text style={[styles.priceValue, { color: colors.textPrimary }]}>
                       Rs {data.current_price.petrol.toFixed(2)}
-                      <Text style={styles.priceUnit}>/{data.current_price.unit}</Text>
+                      <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
                     </Text>
-                    <Text style={styles.priceSub}>per litre</Text>
+                    <Text style={[styles.priceSub, { color: colors.textMuted }]}>per litre</Text>
                   </View>
                   <Sparkline
                     data={makeSparklineSmooth(data.current_price.petrol, data.trend.petrol, data.trend.petrol_change)}
                     width={90}
                     height={36}
-                    color="#003087"
+                    color={colors.accentPetrol}
                     strokeWidth={2}
                   />
                 </View>
               </View>
 
-              <View style={[styles.priceCard, { borderTopColor: '#d32f2f', borderTopWidth: 3 }]}>
+              <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentDiesel, borderTopWidth: 3 }]}>
                 <View style={styles.priceHeader}>
-                  <Text style={styles.priceLabel}>Diesel</Text>
+                  <Text style={[styles.priceLabel, { color: colors.textMuted }]}>Diesel</Text>
                   <View style={styles.trendRow}>
-                    <Text style={data.trend.diesel === 'up' ? styles.trendUp : styles.trendDown}>
-                      {data.trend.diesel === 'up' ? '↑' : '↓'}
-                    </Text>
-                    <Text style={data.trend.diesel === 'up' ? styles.trendUpText : styles.trendDownText}>
+                    {data.trend.diesel === 'up' ? (
+                      <Ionicons name="arrow-up" size={13} color={colors.trendUp} />
+                    ) : (
+                      <Ionicons name="arrow-down" size={13} color={colors.trendDown} />
+                    )}
+                    <Text style={[data.trend.diesel === 'up' ? { color: colors.trendUp } : { color: colors.trendDown }, { fontSize: 12, fontWeight: '600' }]}>
                       {data.trend.diesel_change}%
                     </Text>
                   </View>
                 </View>
                 <View style={styles.priceBody}>
                   <View>
-                    <Text style={styles.priceValue}>
+                    <Text style={[styles.priceValue, { color: colors.textPrimary }]}>
                       Rs {data.current_price.diesel.toFixed(2)}
-                      <Text style={styles.priceUnit}>/{data.current_price.unit}</Text>
+                      <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
                     </Text>
-                    <Text style={styles.priceSub}>per litre</Text>
+                    <Text style={[styles.priceSub, { color: colors.textMuted }]}>per litre</Text>
                   </View>
                   <Sparkline
                     data={makeSparklineSmooth(data.current_price.diesel, data.trend.diesel, data.trend.diesel_change)}
                     width={90}
                     height={36}
-                    color="#d32f2f"
+                    color={colors.accentDiesel}
                     strokeWidth={2}
                   />
                 </View>
               </View>
             </View>
 
-            <View style={styles.fuelUsageCard}>
+            <View style={[styles.fuelUsageCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               <View style={styles.fuelUsageHeader}>
-                <Text style={styles.fuelUsageTitle}>Your Fuel Usage</Text>
-                <TouchableOpacity style={styles.refillBtn} onPress={() => setShowRefillModal(true)}>
-                  <Text style={styles.refillBtnText}>+ Refill</Text>
+                <Text style={[styles.fuelUsageTitle, { color: colors.textPrimary }]}>Your Fuel Usage</Text>
+                <TouchableOpacity style={[styles.refillBtn, { backgroundColor: colors.accentPetrol }]} onPress={() => setShowRefillModal(true)}>
+                  <Text style={[styles.refillBtnText, { color: colors.textWhite }]}>+ Refill</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.fuelUsageGrid}>
                 <View style={styles.fuelUsageItem}>
-                  <Text style={styles.fuelUsageLabel}>Daily usage</Text>
-                  <Text style={styles.fuelUsageValue}>{fuelLiters} L</Text>
+                  <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>Daily usage</Text>
+                  <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>{fuelLiters} L</Text>
                 </View>
                 <View style={styles.fuelUsageItem}>
-                  <Text style={styles.fuelUsageLabel}>Est. driven</Text>
-                  <Text style={styles.fuelUsageValue}>{kmDriven || dailyEstKm} km/day</Text>
+                  <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>Est. driven</Text>
+                  <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>{kmDriven || dailyEstKm} km/day</Text>
                 </View>
                 <View style={styles.fuelUsageItem}>
-                  <Text style={styles.fuelUsageLabel}>Weekly cost</Text>
-                  <Text style={styles.fuelUsageValue}>Rs {weeklyFuelCost.toFixed(0)}</Text>
+                  <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>Weekly cost</Text>
+                  <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>Rs {weeklyFuelCost.toFixed(0)}</Text>
                 </View>
                 <View style={styles.fuelUsageItem}>
-                  <Text style={styles.fuelUsageLabel}>Last refill</Text>
-                  <Text style={styles.fuelUsageValue}>{lastRefill ? formatDate(lastRefill) : '—'}</Text>
+                  <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>Last refill</Text>
+                  <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>{lastRefill ? formatDate(lastRefill) : '—'}</Text>
                 </View>
               </View>
               <View style={styles.fuelUsageRow}>
-                <Text style={styles.fuelUsageHint}>Daily consumption</Text>
+                <Text style={[styles.fuelUsageHint, { color: colors.textMuted }]}>Daily consumption</Text>
                 <View style={styles.fuelInputRow}>
                   <TextInput
-                    style={styles.fuelInput}
+                    style={[styles.fuelInput, { backgroundColor: colors.bg, borderColor: colors.borderInput, color: colors.textPrimary }]}
                     value={fuelLiters}
                     onChangeText={setFuelLiters}
                     keyboardType="numeric"
                     placeholder="45"
+                    placeholderTextColor={colors.textMuted}
                   />
-                  <Text style={styles.fuelInputUnit}>L</Text>
+                  <Text style={[styles.fuelInputUnit, { color: colors.textMuted }]}>L</Text>
                 </View>
               </View>
             </View>
 
-            <View style={styles.insightCard}>
-              <View style={styles.insightIconContainer}>
-                <Text style={styles.insightIcon}>💡</Text>
+            <View style={[styles.insightCard, { backgroundColor: colors.bgInsight, borderColor: colors.borderSubtle }]}>
+              <View style={[styles.insightIconContainer, { backgroundColor: colors.accentPetrol }]}>
+                <Ionicons name="bulb-outline" size={18} color={colors.textWhite} />
               </View>
               <View style={styles.insightContent}>
-                <Text style={styles.insightTitle}>Market Update</Text>
-                <Text style={styles.insightText}>{data.market_update}</Text>
+                <Text style={[styles.insightTitle, { color: colors.textPrimary }]}>Market Update</Text>
+                <Text style={[styles.insightText, { color: colors.textSecondary }]}>{data.market_update}</Text>
               </View>
             </View>
 
             {data.global_crude?.brent_usd && (
-              <View style={styles.globalCrudeCard}>
-                <Text style={styles.globalCrudeTitle}>🌍 Global Crude Benchmark</Text>
+              <View style={[styles.globalCrudeCard, { backgroundColor: colors.crudeBg, borderColor: colors.crudeDivider }]}>
+                <View style={styles.globalCrudeHeader}>
+                  <Ionicons name="globe-outline" size={16} color={colors.crudeText} />
+                  <Text style={[styles.globalCrudeTitle, { color: colors.crudeText }]}> Global Crude Benchmark</Text>
+                </View>
                 <View style={styles.globalCrudeRow}>
                   <View style={styles.globalCrudeItem}>
-                    <Text style={styles.globalCrudeLabel}>Brent</Text>
-                    <Text style={styles.globalCrudeValue}>${data.global_crude.brent_usd.toFixed(2)}</Text>
-                    <Text style={styles.globalCrudeUnit}>/bbl</Text>
+                    <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>Brent</Text>
+                    <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.brent_usd.toFixed(2)}</Text>
+                    <Text style={[styles.globalCrudeUnit, { color: colors.crudeText }]}>/bbl</Text>
                   </View>
-                  <View style={styles.globalCrudeDivider} />
+                  <View style={[styles.globalCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
                   <View style={styles.globalCrudeItem}>
-                    <Text style={styles.globalCrudeLabel}>WTI</Text>
-                    <Text style={styles.globalCrudeValue}>${data.global_crude.wti_usd?.toFixed(2)}</Text>
-                    <Text style={styles.globalCrudeUnit}>/bbl</Text>
+                    <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>WTI</Text>
+                    <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.wti_usd?.toFixed(2)}</Text>
+                    <Text style={[styles.globalCrudeUnit, { color: colors.crudeText }]}>/bbl</Text>
                   </View>
-                  <View style={styles.globalCrudeDivider} />
+                  <View style={[styles.globalCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
                   <View style={styles.globalCrudeItem}>
-                    <Text style={styles.globalCrudeLabel}>Gasoline</Text>
-                    <Text style={styles.globalCrudeValue}>${data.global_crude.gasoline_global_usd?.toFixed(2)}</Text>
-                    <Text style={styles.globalCrudeUnit}>/gal</Text>
+                    <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>Gasoline</Text>
+                    <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.gasoline_global_usd?.toFixed(2)}</Text>
+                    <Text style={[styles.globalCrudeUnit, { color: colors.crudeText }]}>/gal</Text>
                   </View>
                 </View>
-                <View style={styles.mauritiusImpact}>
-                  <Text style={styles.impactTitle}>Impact on Mauritius</Text>
-                  <Text style={styles.impactText}>
+                <View style={[styles.mauritiusImpact, { backgroundColor: colors.bgMauritiusImpact }]}>
+                  <Text style={[styles.impactTitle, { color: colors.crudeText }]}>Impact on Mauritius</Text>
+                  <Text style={[styles.impactText, { color: colors.impactText }]}>
                     Brent crude at ${data.global_crude.brent_usd.toFixed(2)}/bbl {data.trend.petrol === 'up' ? 'pushes' : 'eases'} local retail prices.
                     Mauritius imports refined petroleum — every ${data.trend.petrol === 'up' ? 'rise' : 'drop'} in crude reflects at the pump within 2-3 weeks.
                   </Text>
                 </View>
-                <Text style={styles.globalCrudeSource}>via {data.global_crude.source}</Text>
+                <Text style={[styles.globalCrudeSource, { color: colors.crudeSource }]}>via {data.global_crude.source}</Text>
               </View>
             )}
 
             <View style={styles.metricsRow}>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>Fuel Risk</Text>
-                <View style={styles.metricBarTrack}>
-                  <View style={[styles.metricBarFill, { width: `${riskPct}%`, backgroundColor: RISK_COLORS[data.risk_level] || '#f57c00' }]} />
+              <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                <Text style={[styles.metricLabel, { color: colors.textMuted }]}>Fuel Risk</Text>
+                <View style={[styles.metricBarTrack, { backgroundColor: colors.barTrack }]}>
+                  <View style={[styles.metricBarFill, { width: `${riskPct}%`, backgroundColor: colors[`risk${data.risk_level}` as keyof typeof colors] || colors.riskModerate }]} />
                 </View>
-                <Text style={[styles.metricValue, { color: RISK_COLORS[data.risk_level] || '#f57c00' }]}>
+                <Text style={[styles.metricValue, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>
                   {data.risk_level} · {riskPct.toFixed(0)}%
                 </Text>
-                <Text style={styles.metricSub}>Based on trend & your usage</Text>
+                <Text style={[styles.metricSub, { color: colors.textMuted }]}>Based on trend & your usage</Text>
               </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>Business Impact</Text>
-                <View style={styles.metricBarTrack}>
-                  <View style={[styles.metricBarFill, { width: `${impactPct}%`, backgroundColor: RISK_COLORS[impactPct > 50 ? 'High' : impactPct > 25 ? 'Moderate' : 'Low'] || '#f57c00' }]} />
+              <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                <Text style={[styles.metricLabel, { color: colors.textMuted }]}>Business Impact</Text>
+                <View style={[styles.metricBarTrack, { backgroundColor: colors.barTrack }]}>
+                  <View style={[styles.metricBarFill, { width: `${impactPct}%`, backgroundColor: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]} />
                 </View>
-                <Text style={[styles.metricValue, { color: RISK_COLORS[impactPct > 50 ? 'High' : impactPct > 25 ? 'Moderate' : 'Low'] || '#f57c00' }]}>
+                <Text style={[styles.metricValue, { color: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]}>
                   {data.impact_score} · {impactPct.toFixed(0)}%
                 </Text>
-                <Text style={styles.metricSub}>Weekly Rs {weeklyFuelCost.toFixed(0)} spend</Text>
+                <Text style={[styles.metricSub, { color: colors.textMuted }]}>Weekly Rs {weeklyFuelCost.toFixed(0)} spend</Text>
               </View>
             </View>
 
-            <View style={styles.newsSection}>
-              <Text style={styles.newsSectionTitle}>Oil & Fuel Market — Mauritius</Text>
+            <View style={[styles.newsSection, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+              <Text style={[styles.newsSectionTitle, { color: colors.textPrimary }]}>Oil & Fuel Market — Mauritius</Text>
               {newsLoading ? (
                 <View style={{ gap: 12 }}>
-                  <View style={{ height: 60, backgroundColor: '#e2e2e5', borderRadius: 8 }} />
-                  <View style={{ height: 60, backgroundColor: '#e2e2e5', borderRadius: 8 }} />
+                  <View style={{ height: 60, backgroundColor: colors.bgSkeleton, borderRadius: 8 }} />
+                  <View style={{ height: 60, backgroundColor: colors.bgSkeleton, borderRadius: 8 }} />
                 </View>
               ) : news.length === 0 ? (
-                <Text style={styles.newsEmpty}>No news articles available</Text>
+                <Text style={[styles.newsEmpty, { color: colors.textMuted }]}>No news articles available</Text>
               ) : (
                 <View style={{ gap: 12 }}>
                   {news.map(article => (
                     <TouchableOpacity
                       key={article.id}
-                      style={styles.newsCard}
+                      style={[styles.newsCard, { backgroundColor: colors.bgSurface, borderColor: colors.bgSurface }]}
                       onPress={() => setSelectedNews(article)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.newsTitle}>{article.title}</Text>
-                      <Text style={styles.newsSummary} numberOfLines={2}>{article.summary}</Text>
+                      <Text style={[styles.newsTitle, { color: colors.textPrimary }]}>{article.title}</Text>
+                      <Text style={[styles.newsSummary, { color: colors.textSecondary }]} numberOfLines={2}>{article.summary}</Text>
                       <View style={styles.newsMeta}>
-                        <Text style={styles.newsSource}>{article.source}</Text>
-                        <Text style={styles.newsDate}>{article.published_at}</Text>
+                        <Text style={[styles.newsSource, { color: colors.textLink }]}>{article.source}</Text>
+                        <Text style={[styles.newsDate, { color: colors.textMuted }]}>{article.published_at}</Text>
                       </View>
-                      <Text style={styles.newsRead}>Read →</Text>
+                      <Text style={[styles.newsRead, { color: colors.textLink }]}>Read →</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -404,26 +419,27 @@ export default function HomeScreen() {
       </ScrollView>
 
       <Modal visible={showRefillModal} transparent animationType="slide" onRequestClose={() => setShowRefillModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Log Refill</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.bgModalOverlay }]}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.bgElevated }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Log Refill</Text>
               <TouchableOpacity onPress={() => setShowRefillModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <Ionicons name="close" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             <View style={styles.modalBody}>
-              <Text style={styles.refillLabel}>Liters refilled</Text>
+              <Text style={[styles.refillLabel, { color: colors.textSecondary }]}>Liters refilled</Text>
               <TextInput
-                style={styles.refillInput}
+                style={[styles.refillInput, { backgroundColor: colors.bg, borderColor: colors.borderInput, color: colors.textPrimary }]}
                 value={refillAmount}
                 onChangeText={setRefillAmount}
                 keyboardType="numeric"
                 placeholder="e.g. 45"
+                placeholderTextColor={colors.textMuted}
                 autoFocus
               />
               <TouchableOpacity
-                style={[styles.refillSubmit, !refillAmount && { opacity: 0.5 }]}
+                style={[styles.refillSubmit, { backgroundColor: colors.accentPetrol }, !refillAmount && { opacity: 0.5 }]}
                 disabled={!refillAmount}
                 onPress={() => {
                   setFuelLiters(refillAmount);
@@ -432,7 +448,7 @@ export default function HomeScreen() {
                   setRefillAmount('');
                 }}
               >
-                <Text style={styles.refillSubmitText}>Log Refill</Text>
+                <Text style={[styles.refillSubmitText, { color: colors.textWhite }]}>Log Refill</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -440,19 +456,19 @@ export default function HomeScreen() {
       </Modal>
 
       <Modal visible={selectedNews !== null} transparent animationType="slide" onRequestClose={() => setSelectedNews(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalSource}>{selectedNews?.source}</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.bgModalOverlay }]}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.bgElevated }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalSource, { color: colors.textLink }]}>{selectedNews?.source}</Text>
               <TouchableOpacity onPress={() => setSelectedNews(null)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <Ionicons name="close" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalBody}>
-              <Text style={styles.newsDetailTitle}>{selectedNews?.title}</Text>
-              <Text style={styles.newsDetailDate}>{selectedNews?.published_at}</Text>
-              <View style={styles.modalDivider} />
-              <Text style={styles.newsDetailContent}>{selectedNews?.content}</Text>
+              <Text style={[styles.newsDetailTitle, { color: colors.textPrimary }]}>{selectedNews?.title}</Text>
+              <Text style={[styles.newsDetailDate, { color: colors.textMuted }]}>{selectedNews?.published_at}</Text>
+              <View style={[styles.modalDivider, { backgroundColor: colors.bgSurface }]} />
+              <Text style={[styles.newsDetailContent, { color: colors.textPrimary }]}>{selectedNews?.content}</Text>
             </ScrollView>
           </View>
         </View>
@@ -462,163 +478,157 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9f9fc' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, height: 56, backgroundColor: '#f9f9fc',
+    paddingHorizontal: 16, height: 56,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#003087' },
+  headerTitle: { fontSize: 20, fontWeight: '700' },
   profileBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  profileIcon: { fontSize: 22 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingBottom: 32, gap: 20 },
   errorBanner: {
-    backgroundColor: '#ffdad6', padding: 12, borderRadius: 8,
+    padding: 12, borderRadius: 8,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  errorText: { fontSize: 13, color: '#93000a', flex: 1 },
-  retryText: { fontSize: 12, fontWeight: '600', color: '#ba1a1a', marginLeft: 8 },
+  errorText: { fontSize: 13, flex: 1 },
+  retryText: { fontSize: 12, fontWeight: '600', marginLeft: 8 },
 
   bannerCard: {
-    backgroundColor: '#e8edf5', borderRadius: 10, flexDirection: 'row',
-    overflow: 'hidden', borderWidth: 1, borderColor: '#cdd7e6',
+    borderRadius: 10, flexDirection: 'row',
+    overflow: 'hidden', borderWidth: 1,
   },
-  bannerAccent: { width: 5, backgroundColor: '#003087' },
+  bannerAccent: { width: 5 },
   bannerContent: { flex: 1, padding: 14, gap: 4 },
-  bannerLabel: { fontSize: 10, fontWeight: '700', color: '#003087', textTransform: 'uppercase', letterSpacing: 1 },
-  bannerTitle: { fontSize: 15, fontWeight: '700', color: '#1a1c1e' },
-  bannerText: { fontSize: 13, color: '#444652', lineHeight: 18 },
+  bannerLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  bannerTitle: { fontSize: 15, fontWeight: '700' },
+  bannerText: { fontSize: 13, lineHeight: 18 },
 
   priceGrid: { flexDirection: 'row', gap: 10 },
   priceCard: {
-    flex: 1, backgroundColor: '#ffffff', borderRadius: 10,
-    borderWidth: 1, borderColor: '#dee5ef', padding: 14, gap: 6,
+    flex: 1, borderRadius: 10,
+    borderWidth: 1, padding: 14, gap: 6,
   },
   priceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   priceBody: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  priceLabel: { fontSize: 12, fontWeight: '600', color: '#747683' },
+  priceLabel: { fontSize: 12, fontWeight: '600' },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  trendDown: { color: '#2e7d32', fontSize: 13 },
-  trendDownText: { fontSize: 12, color: '#2e7d32', fontWeight: '600' },
-  trendUp: { color: '#d32f2f', fontSize: 13 },
-  trendUpText: { fontSize: 12, color: '#d32f2f', fontWeight: '600' },
-  priceValue: { fontSize: 20, fontWeight: '700', color: '#1a1c1e' },
-  priceUnit: { fontSize: 11, fontWeight: '400', color: '#747683' },
-  priceSub: { fontSize: 10, color: '#747683', marginTop: -2 },
+  priceValue: { fontSize: 20, fontWeight: '700' },
+  priceUnit: { fontSize: 11, fontWeight: '400' },
+  priceSub: { fontSize: 10, marginTop: -2 },
 
   fuelUsageCard: {
-    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
+    borderRadius: 12, borderWidth: 1,
     padding: 16, gap: 12,
   },
   fuelUsageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fuelUsageTitle: { fontSize: 14, fontWeight: '700', color: '#1a1c1e' },
-  refillBtn: { backgroundColor: '#003087', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  refillBtnText: { fontSize: 12, fontWeight: '600', color: '#ffffff' },
+  fuelUsageTitle: { fontSize: 14, fontWeight: '700' },
+  refillBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  refillBtnText: { fontSize: 12, fontWeight: '600' },
   fuelUsageGrid: { flexDirection: 'row', gap: 8 },
   fuelUsageItem: { flex: 1, alignItems: 'center', gap: 2 },
-  fuelUsageLabel: { fontSize: 9, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
-  fuelUsageValue: { fontSize: 14, fontWeight: '700', color: '#1a1c1e' },
+  fuelUsageLabel: { fontSize: 9, fontWeight: '600', textTransform: 'uppercase' },
+  fuelUsageValue: { fontSize: 14, fontWeight: '700' },
   fuelUsageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fuelUsageHint: { fontSize: 12, color: '#747683' },
+  fuelUsageHint: { fontSize: 12 },
   fuelInputRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   fuelInput: {
-    width: 60, height: 32, borderWidth: 1, borderColor: '#c4c6d4', borderRadius: 6,
-    paddingHorizontal: 8, fontSize: 14, color: '#1a1c1e', textAlign: 'center',
+    width: 60, height: 32, borderWidth: 1, borderRadius: 6,
+    paddingHorizontal: 8, fontSize: 14, textAlign: 'center',
   },
-  fuelInputUnit: { fontSize: 12, color: '#747683' },
+  fuelInputUnit: { fontSize: 12 },
 
   insightCard: {
-    backgroundColor: '#f0f4fa', borderRadius: 8, padding: 14,
-    flexDirection: 'row', gap: 12, borderWidth: 1, borderColor: 'rgba(196,198,212,0.3)',
+    borderRadius: 8, padding: 14,
+    flexDirection: 'row', gap: 12, borderWidth: 1,
   },
-  insightIconContainer: { width: 36, height: 36, backgroundColor: '#003087', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  insightIcon: { fontSize: 18 },
+  insightIconContainer: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   insightContent: { flex: 1, gap: 4 },
-  insightTitle: { fontSize: 13, fontWeight: '600', color: '#1a1c1e' },
-  insightText: { fontSize: 13, color: '#444652', lineHeight: 18 },
+  insightTitle: { fontSize: 13, fontWeight: '600' },
+  insightText: { fontSize: 13, lineHeight: 18 },
 
   metricsRow: { flexDirection: 'row', gap: 10 },
   metricCard: {
-    flex: 1, backgroundColor: '#ffffff', borderRadius: 10,
-    borderWidth: 1, borderColor: '#dee5ef', padding: 14, gap: 6,
+    flex: 1, borderRadius: 10,
+    borderWidth: 1, padding: 14, gap: 6,
   },
-  metricLabel: { fontSize: 11, fontWeight: '600', color: '#747683', textTransform: 'uppercase' },
-  metricBarTrack: { height: 6, backgroundColor: '#e2e2e5', borderRadius: 3, overflow: 'hidden' },
+  metricLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase' },
+  metricBarTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   metricBarFill: { height: '100%', borderRadius: 3 },
   metricValue: { fontSize: 16, fontWeight: '700' },
-  metricSub: { fontSize: 10, color: '#747683' },
+  metricSub: { fontSize: 10 },
 
   badge: {
-    backgroundColor: '#dbe1ff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
-    marginLeft: 8,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
   },
-  badgeText: { fontSize: 11, fontWeight: '600', color: '#003087' },
+  badgeText: { fontSize: 11, fontWeight: '600' },
 
   newsSection: {
-    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
+    borderRadius: 12, borderWidth: 1,
     padding: 16, gap: 12,
   },
   newsSectionTitle: {
-    fontSize: 14, fontWeight: '700', color: '#1a1c1e', textTransform: 'uppercase', letterSpacing: 0.5,
+    fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5,
   },
-  newsEmpty: { fontSize: 14, color: '#747683', textAlign: 'center', paddingVertical: 16 },
+  newsEmpty: { fontSize: 14, textAlign: 'center', paddingVertical: 16 },
   newsCard: {
-    backgroundColor: '#f9f9fc', borderRadius: 8, borderWidth: 1, borderColor: '#f0f0f3',
+    borderRadius: 8, borderWidth: 1,
     padding: 12, gap: 4,
   },
-  newsTitle: { fontSize: 14, fontWeight: '700', color: '#1a1c1e', lineHeight: 18 },
-  newsSummary: { fontSize: 13, color: '#444652', lineHeight: 17 },
+  newsTitle: { fontSize: 14, fontWeight: '700', lineHeight: 18 },
+  newsSummary: { fontSize: 13, lineHeight: 17 },
   newsMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
-  newsSource: { fontSize: 11, fontWeight: '600', color: '#003087' },
-  newsDate: { fontSize: 11, color: '#747683' },
-  newsRead: { fontSize: 13, fontWeight: '600', color: '#003087', marginTop: 4 },
+  newsSource: { fontSize: 11, fontWeight: '600' },
+  newsDate: { fontSize: 11 },
+  newsRead: { fontSize: 13, fontWeight: '600', marginTop: 4 },
 
   globalCrudeCard: {
-    backgroundColor: '#0a1929', borderRadius: 12, padding: 16, gap: 12,
-    borderWidth: 1, borderColor: '#1a3a5c',
+    borderRadius: 12, padding: 16, gap: 12,
+    borderWidth: 1,
   },
-  globalCrudeTitle: { fontSize: 13, fontWeight: '700', color: '#80bfff', textTransform: 'uppercase', letterSpacing: 0.5 },
+  globalCrudeHeader: { flexDirection: 'row', alignItems: 'center' },
+  globalCrudeTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   globalCrudeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   globalCrudeItem: { alignItems: 'center', gap: 2 },
-  globalCrudeLabel: { fontSize: 11, fontWeight: '600', color: '#a0c4ff' },
-  globalCrudeValue: { fontSize: 20, fontWeight: '800', color: '#ffffff' },
-  globalCrudeUnit: { fontSize: 11, color: '#80bfff' },
-  globalCrudeDivider: { width: 1, height: 36, backgroundColor: '#1a3a5c' },
-  globalCrudeSource: { fontSize: 10, color: '#5a7a9a', textAlign: 'center' },
+  globalCrudeLabel: { fontSize: 11, fontWeight: '600' },
+  globalCrudeValue: { fontSize: 20, fontWeight: '800' },
+  globalCrudeUnit: { fontSize: 11 },
+  globalCrudeDivider: { width: 1, height: 36 },
+  globalCrudeSource: { fontSize: 10, textAlign: 'center' },
   mauritiusImpact: {
-    backgroundColor: 'rgba(0,48,135,0.15)', borderRadius: 8, padding: 12, gap: 4,
+    borderRadius: 8, padding: 12, gap: 4,
   },
-  impactTitle: { fontSize: 11, fontWeight: '700', color: '#80bfff', textTransform: 'uppercase' },
-  impactText: { fontSize: 12, color: '#b0d0ff', lineHeight: 17 },
+  impactTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  impactText: { fontSize: 12, lineHeight: 17 },
 
   modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end',
+    flex: 1, justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: '#ffffff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    borderTopLeftRadius: 20, borderTopRightRadius: 20,
     maxHeight: '85%', paddingTop: 8,
   },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f3f6',
+    paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1,
   },
-  modalSource: { fontSize: 13, fontWeight: '600', color: '#003087' },
-  modalClose: { fontSize: 20, color: '#747683', padding: 4 },
+  modalSource: { fontSize: 13, fontWeight: '600' },
   modalBody: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32 },
-  modalDivider: { height: 1, backgroundColor: '#f3f3f6', marginBottom: 16 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1a1c1e' },
-  refillLabel: { fontSize: 14, fontWeight: '600', color: '#444652' },
+  modalDivider: { height: 1, marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: '700' },
+  refillLabel: { fontSize: 14, fontWeight: '600' },
   refillInput: {
-    height: 48, borderWidth: 1, borderColor: '#c4c6d4', borderRadius: 8,
-    paddingHorizontal: 16, fontSize: 16, backgroundColor: '#f9f9fc', color: '#1a1c1e',
+    height: 48, borderWidth: 1, borderRadius: 8,
+    paddingHorizontal: 16, fontSize: 16,
   },
   refillSubmit: {
-    height: 48, backgroundColor: '#003087', borderRadius: 8,
+    height: 48, borderRadius: 8,
     alignItems: 'center', justifyContent: 'center',
   },
-  refillSubmitText: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
-  newsDetailTitle: { fontSize: 20, fontWeight: '700', color: '#1a1c1e', lineHeight: 26, marginBottom: 8 },
-  newsDetailDate: { fontSize: 12, color: '#747683', marginBottom: 12 },
-  newsDetailContent: { fontSize: 15, color: '#1a1c1e', lineHeight: 24 },
+  refillSubmitText: { fontSize: 16, fontWeight: '600' },
+  newsDetailTitle: { fontSize: 20, fontWeight: '700', lineHeight: 26, marginBottom: 8 },
+  newsDetailDate: { fontSize: 12, marginBottom: 12 },
+  newsDetailContent: { fontSize: 15, lineHeight: 24 },
 });

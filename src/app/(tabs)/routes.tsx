@@ -3,7 +3,9 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Activi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
-import { MapView, Polyline, Marker } from '@/components/MapView';
+import { Ionicons } from '@expo/vector-icons';
+import { useAppColor } from '@/hooks/useAppColor';
+import { MapView, Polyline, Marker, MapViewHandle } from '@/components/MapView';
 
 import { api } from '@/services/api';
 
@@ -51,8 +53,6 @@ const MAURITIUS_REGION = {
   longitudeDelta: 0.7,
 };
 
-const ROUTE_COLORS = ['#003087', '#d32f2f', '#2e7d32'];
-
 function decodePolyline(encoded: string): Array<{ latitude: number; longitude: number }> {
   const poly = [] as Array<{ latitude: number; longitude: number }>;
   let index = 0, lat = 0, lng = 0;
@@ -86,8 +86,11 @@ export default function RoutesScreen() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [showSuggestions, setShowSuggestions] = useState<'origin' | 'destination' | null>(null);
-  const mapRef = useRef<MapView>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const mapRef = useRef<MapViewHandle>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const colors = useAppColor();
+  const routeColors = [colors.accentPetrol, colors.trendUp, colors.trendDown];
 
   useEffect(() => {
     (async () => {
@@ -160,7 +163,7 @@ export default function RoutesScreen() {
       setGpsCoords(coords);
       setOrigin('My Location');
       setOriginCoords(coords);
-      mapRef.current?.animateToRegion({
+      mapRef.current?.animateToRegion?.({
         latitude: coords.lat,
         longitude: coords.lng,
         latitudeDelta: 0.1,
@@ -210,7 +213,7 @@ export default function RoutesScreen() {
           const avgLng = (originCoords.lng + destCoords.lng) / 2;
           const dlat = Math.abs(originCoords.lat - destCoords.lat) * 1.5;
           const dlng = Math.abs(originCoords.lng - destCoords.lng) * 1.5;
-          mapRef.current?.animateToRegion({
+          mapRef.current?.animateToRegion?.({
             latitude: avgLat,
             longitude: avgLng,
             latitudeDelta: Math.max(dlat, 0.1),
@@ -238,7 +241,7 @@ export default function RoutesScreen() {
       const mid = { latitude: (originCoords.lat + destCoords.lat) / 2, longitude: (originCoords.lng + destCoords.lng) / 2 };
       const dlat = Math.abs(originCoords.lat - destCoords.lat) * 1.8;
       const dlng = Math.abs(originCoords.lng - destCoords.lng) * 1.8;
-      mapRef.current?.animateToRegion({
+      mapRef.current?.animateToRegion?.({
         ...mid,
         latitudeDelta: Math.max(dlat, 0.05),
         longitudeDelta: Math.max(dlng, 0.05),
@@ -247,47 +250,47 @@ export default function RoutesScreen() {
   }, [originCoords, destCoords]);
 
   const displayPoints = [];
-  if (gpsCoords) displayPoints.push({ coordinate: { latitude: gpsCoords.lat, longitude: gpsCoords.lng }, title: 'You are here', color: '#003087' });
-  if (originCoords && origin !== 'My Location') displayPoints.push({ coordinate: { latitude: originCoords.lat, longitude: originCoords.lng }, title: origin, color: '#2e7d32' });
-  if (destCoords) displayPoints.push({ coordinate: { latitude: destCoords.lat, longitude: destCoords.lng }, title: destination, color: '#d32f2f' });
+  if (gpsCoords) displayPoints.push({ coordinate: { latitude: gpsCoords.lat, longitude: gpsCoords.lng }, title: 'You are here', color: colors.accentPetrol });
+  if (originCoords && origin !== 'My Location') displayPoints.push({ coordinate: { latitude: originCoords.lat, longitude: originCoords.lng }, title: origin, color: colors.trendDown });
+  if (destCoords) displayPoints.push({ coordinate: { latitude: destCoords.lat, longitude: destCoords.lng }, title: destination, color: colors.trendUp });
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerIcon}>🗺️</Text>
-          <Text style={styles.headerTitle}>Routes</Text>
+          <Ionicons name="map-outline" size={22} color={colors.accentPetrol} />
+          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>Routes</Text>
         </View>
         <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
-          <Text style={styles.profileIcon}>👤</Text>
+          <Ionicons name="person-outline" size={22} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.inputCard}>
+      <View style={[styles.inputCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         <View style={styles.inputRow}>
           <View style={styles.inputWrapper}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.bg, borderColor: colors.borderInput }]}
               placeholder="From (e.g. Port Louis)"
-              placeholderTextColor="#747683"
+              placeholderTextColor={colors.textMuted}
               value={origin}
               onChangeText={onOriginChange}
               onFocus={() => originSuggestions.length > 0 && setShowSuggestions('origin')}
             />
             <TouchableOpacity style={styles.gpsBtn} onPress={useGps} disabled={gpsLoading}>
-              {gpsLoading ? <ActivityIndicator size="small" color="#003087" /> : <Text style={styles.gpsIcon}>📍</Text>}
+              {gpsLoading ? <ActivityIndicator size="small" color={colors.accentPetrol} /> : <Ionicons name="locate-outline" size={18} color={colors.accentPetrol} />}
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.swapBtn} onPress={swapLocations}>
-            <Text style={styles.swapIcon}>⇄</Text>
+          <TouchableOpacity style={[styles.swapBtn, { backgroundColor: colors.bgSurface }]} onPress={swapLocations}>
+            <Ionicons name="swap-horizontal-outline" size={20} color={colors.accentPetrol} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, { marginTop: 4 }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.bg, borderColor: colors.borderInput }]}
             placeholder="To (e.g. Curepipe)"
-            placeholderTextColor="#747683"
+            placeholderTextColor={colors.textMuted}
             value={destination}
             onChangeText={onDestChange}
             onFocus={() => destSuggestions.length > 0 && setShowSuggestions('destination')}
@@ -295,19 +298,19 @@ export default function RoutesScreen() {
         </View>
 
         {showSuggestions === 'origin' && originSuggestions.length > 0 && (
-          <View style={styles.suggestions}>
+          <View style={[styles.suggestions, { backgroundColor: colors.bgCard, borderColor: colors.borderInput }]}>
             {originSuggestions.slice(0, 5).map((s, i) => (
-              <TouchableOpacity key={i} style={styles.suggestionItem} onPress={() => pickOrigin(s)}>
-                <Text style={styles.suggestionText} numberOfLines={1}>{s.display_name}</Text>
+              <TouchableOpacity key={i} style={[styles.suggestionItem, { borderBottomColor: colors.bgSurface }]} onPress={() => pickOrigin(s)}>
+                <Text style={[styles.suggestionText, { color: colors.textPrimary }]} numberOfLines={1}>{s.display_name}</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
         {showSuggestions === 'destination' && destSuggestions.length > 0 && (
-          <View style={styles.suggestions}>
+          <View style={[styles.suggestions, { backgroundColor: colors.bgCard, borderColor: colors.borderInput }]}>
             {destSuggestions.slice(0, 5).map((s, i) => (
-              <TouchableOpacity key={i} style={styles.suggestionItem} onPress={() => pickDest(s)}>
-                <Text style={styles.suggestionText} numberOfLines={1}>{s.display_name}</Text>
+              <TouchableOpacity key={i} style={[styles.suggestionItem, { borderBottomColor: colors.bgSurface }]} onPress={() => pickDest(s)}>
+                <Text style={[styles.suggestionText, { color: colors.textPrimary }]} numberOfLines={1}>{s.display_name}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -315,30 +318,30 @@ export default function RoutesScreen() {
 
         <View style={styles.fuelRow}>
           <TouchableOpacity
-            style={[styles.fuelBtn, selectedFuel === 'petrol' && styles.fuelBtnActive]}
+            style={[styles.fuelBtn, { backgroundColor: colors.bg, borderColor: colors.borderInput }, selectedFuel === 'petrol' && { borderColor: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}
             onPress={() => setSelectedFuel('petrol')}
           >
-            <Text style={[styles.fuelBtnText, selectedFuel === 'petrol' && styles.fuelBtnTextActive]}>Petrol</Text>
+            <Text style={[styles.fuelBtnText, { color: selectedFuel === 'petrol' ? colors.accentPetrol : colors.textMuted }]}>Petrol</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.fuelBtn, selectedFuel === 'diesel' && styles.fuelBtnActive]}
+            style={[styles.fuelBtn, { backgroundColor: colors.bg, borderColor: colors.borderInput }, selectedFuel === 'diesel' && { borderColor: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}
             onPress={() => setSelectedFuel('diesel')}
           >
-            <Text style={[styles.fuelBtnText, selectedFuel === 'diesel' && styles.fuelBtnTextActive]}>Diesel</Text>
+            <Text style={[styles.fuelBtnText, { color: selectedFuel === 'diesel' ? colors.accentPetrol : colors.textMuted }]}>Diesel</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.planBtn, (!originCoords || !destCoords || loading) && styles.buttonDisabled]}
+            style={[styles.planBtn, { backgroundColor: colors.accentPetrol }, (!originCoords || !destCoords || loading) && styles.buttonDisabled]}
             onPress={planRoute}
             disabled={!originCoords || !destCoords || loading}
           >
-            {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.planBtnText}>Plan</Text>}
+            {loading ? <ActivityIndicator size="small" color={colors.textWhite} /> : <Text style={[styles.planBtnText, { color: colors.textWhite }]}>Plan</Text>}
           </TouchableOpacity>
         </View>
       </View>
 
       {error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={[styles.errorBanner, { backgroundColor: colors.trendUp + '20' }]}>
+          <Text style={[styles.errorText, { color: colors.textError }]}>{error}</Text>
         </View>
       )}
 
@@ -357,7 +360,7 @@ export default function RoutesScreen() {
             <Polyline
               key={i}
               coordinates={decodePolyline(route.polyline)}
-              strokeColor={ROUTE_COLORS[i % ROUTE_COLORS.length]}
+              strokeColor={routeColors[i % routeColors.length]}
               strokeWidth={i === 0 ? 5 : 3}
               strokeOpacity={i === 0 ? 1 : 0.5}
             />
@@ -366,15 +369,15 @@ export default function RoutesScreen() {
             <Marker
               key={`gs-${s.id}`}
               coordinate={{ latitude: s.lat, longitude: s.lng }}
-              title={`⛽ ${s.name}`}
+              title={s.name}
               description={`${s.brand} · ${s.distance_km.toFixed(1)} km`}
-              pinColor="#f57c00"
+              pinColor={colors.accentPetrol}
             />
           ))}
         </MapView>
         {routes.length > 0 && (
-          <TouchableOpacity style={styles.fitBtn} onPress={fitMapToRoutes}>
-            <Text style={styles.fitBtnText}>⊞ Fit</Text>
+          <TouchableOpacity style={[styles.fitBtn, { backgroundColor: colors.bgCard, borderColor: colors.border, shadowColor: colors.shadow }]} onPress={fitMapToRoutes}>
+            <Text style={[styles.fitBtnText, { color: colors.accentPetrol }]}>⊞ Fit</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -382,27 +385,32 @@ export default function RoutesScreen() {
       {routes.length > 0 && (
         <ScrollView style={styles.routesContainer} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.routesContent}>
           {routes.map((route, i) => (
-            <View key={i} style={[styles.routeCard, i === 0 && styles.routeCardBest]}>
+            <View key={i} style={[styles.routeCard, { backgroundColor: colors.bgCard, borderColor: colors.border, shadowColor: colors.shadow }, i === 0 && styles.routeCardBest, i === 0 && { borderColor: colors.accentPetrol }]}>
               <View style={styles.routeCardHeader}>
-                <Text style={styles.routeRank}>#{route.rank}</Text>
-                {i === 0 && <Text style={styles.bestBadge}>★ Best</Text>}
-                <Text style={[styles.routeScore, { color: route.ai_score > 70 ? '#2e7d32' : route.ai_score > 50 ? '#f57c00' : '#d32f2f' }]}>
-                  {route.ai_score}%
-                </Text>
+                <Text style={[styles.routeRank, { color: colors.textPrimary }]}>#{route.rank}</Text>
+                {i === 0 && <Text style={[styles.bestBadge, { color: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}><Ionicons name="star" size={14} color={colors.accentPetrol} /> Best</Text>}
+                  <Text style={[styles.routeScore, { color: route.ai_score > 70 ? colors.trendDown : route.ai_score > 50 ? colors.trendStable : colors.trendUp }]}>
+                    {route.ai_score}%
+                  </Text>
               </View>
-              <Text style={styles.routeRecommendation}>{route.recommendation}</Text>
+              <Text style={[styles.routeRecommendation, { color: colors.textMuted }]}>{route.recommendation}</Text>
               <View style={styles.routeStats}>
-                <Text style={styles.routeStat}>{route.distance_km} km</Text>
-                <Text style={styles.routeStat}>{Math.round(route.duration_min + route.traffic_delay_min)} min</Text>
-                <Text style={styles.routeStat}>${route.fuel_cost_usd.toFixed(2)}</Text>
+                <Ionicons name="resize-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.routeStat, { color: colors.textSecondary }]}>{route.distance_km} km</Text>
+                <Ionicons name="car-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.routeStat, { color: colors.textSecondary }]}>{Math.round(route.duration_min + route.traffic_delay_min)} min</Text>
+                <Ionicons name="flame-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.routeStat, { color: colors.textSecondary }]}>${route.fuel_cost_usd.toFixed(2)}</Text>
               </View>
               {route.traffic_delay_min > 0 && (
-                <Text style={[styles.trafficText, { color: route.congestion === 'heavy' ? '#d32f2f' : '#f57c00' }]}>
-                  🚦 +{route.traffic_delay_min} min delay ({route.congestion})
+                <Text style={[styles.trafficText, { color: route.congestion === 'heavy' ? colors.trendUp : colors.trendStable }]}>
+                  <Ionicons name="car-outline" size={18} color={colors.textSecondary} /> +{route.traffic_delay_min} min delay ({route.congestion})
                 </Text>
               )}
               {route.gas_stations.length > 0 && (
-                <Text style={styles.gasText}>⛽ {route.gas_stations.length} station{route.gas_stations.length > 1 ? 's' : ''} nearby</Text>
+                <Text style={[styles.gasText, { color: colors.accentPetrol }]}>
+                  <Ionicons name="flame-outline" size={16} color={colors.accentPetrol} /> {route.gas_stations.length} station{route.gas_stations.length > 1 ? 's' : ''} nearby
+                </Text>
               )}
             </View>
           ))}
@@ -413,76 +421,70 @@ export default function RoutesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9f9fc' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, height: 56, backgroundColor: '#f9f9fc',
+    paddingHorizontal: 16, height: 56,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerIcon: { fontSize: 22 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#003087' },
+  headerTitle: { fontSize: 20, fontWeight: '700' },
   profileBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  profileIcon: { fontSize: 22 },
   inputCard: {
-    backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1, borderColor: '#dee5ef',
-    marginHorizontal: 12, padding: 12, gap: 8, marginBottom: 8,
+    borderRadius: 12, borderWidth: 1,
+    marginHorizontal: 12, padding: 16, gap: 12, marginBottom: 8,
   },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   inputWrapper: { flex: 1, position: 'relative' },
   input: {
-    height: 40, borderWidth: 1, borderColor: '#c4c6d4', borderRadius: 8,
-    paddingHorizontal: 12, fontSize: 14, color: '#1a1c1e', backgroundColor: '#f9f9fc',
+    height: 40, borderWidth: 1, borderRadius: 8,
+    paddingHorizontal: 12, fontSize: 14,
   },
   gpsBtn: { position: 'absolute', right: 6, top: 6, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  gpsIcon: { fontSize: 16 },
-  swapBtn: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#f3f3f6', alignItems: 'center', justifyContent: 'center' },
-  swapIcon: { fontSize: 18, color: '#003087' },
+  swapBtn: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   suggestions: {
-    backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#c4c6d4', borderRadius: 8,
+    borderWidth: 1, borderRadius: 8,
     maxHeight: 180,
   },
-  suggestionItem: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f3f3f6' },
-  suggestionText: { fontSize: 13, color: '#1a1c1e' },
-  fuelRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  suggestionItem: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1 },
+  suggestionText: { fontSize: 13 },
+  fuelRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 4 },
   fuelBtn: {
     paddingVertical: 6, paddingHorizontal: 14, borderRadius: 6,
-    backgroundColor: '#f9f9fc', borderWidth: 1, borderColor: '#c4c6d4',
+    borderWidth: 1,
   },
-  fuelBtnActive: { borderColor: '#003087', backgroundColor: '#dbe1ff' },
-  fuelBtnText: { fontSize: 12, fontWeight: '600', color: '#747683' },
-  fuelBtnTextActive: { color: '#003087' },
+  fuelBtnText: { fontSize: 12, fontWeight: '600' },
   planBtn: {
-    flex: 1, height: 34, backgroundColor: '#003087', borderRadius: 8,
+    flex: 1, height: 34, borderRadius: 8,
     alignItems: 'center', justifyContent: 'center',
   },
-  planBtnText: { fontSize: 14, fontWeight: '600', color: '#ffffff' },
+  planBtnText: { fontSize: 14, fontWeight: '600' },
   buttonDisabled: { opacity: 0.6 },
-  errorBanner: { backgroundColor: '#ffdad6', marginHorizontal: 12, padding: 10, borderRadius: 8, marginBottom: 8 },
-  errorText: { fontSize: 13, color: '#93000a' },
-  mapContainer: { flex: 1, marginHorizontal: 12, borderRadius: 12, overflow: 'hidden', position: 'relative' },
+  errorBanner: { marginHorizontal: 12, padding: 10, borderRadius: 8, marginBottom: 8 },
+  errorText: { fontSize: 13 },
+  mapContainer: { flex: 1, marginHorizontal: 12, borderRadius: 12, overflow: 'hidden', position: 'relative', backgroundColor: '#1c1c22' },
   map: { flex: 1 },
   fitBtn: {
     position: 'absolute', top: 12, right: 12,
-    backgroundColor: '#ffffff', paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 8, borderWidth: 1, borderColor: '#dee5ef',
-    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 8, borderWidth: 1,
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
   },
-  fitBtnText: { fontSize: 12, fontWeight: '600', color: '#003087' },
+  fitBtnText: { fontSize: 12, fontWeight: '600' },
   routesContainer: { position: 'absolute', bottom: 8, left: 0, right: 0 },
   routesContent: { paddingHorizontal: 12, gap: 8 },
   routeCard: {
-    backgroundColor: '#ffffff', borderRadius: 10, borderWidth: 1, borderColor: '#dee5ef',
+    borderRadius: 10, borderWidth: 1,
     padding: 14, width: 220, gap: 6,
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, elevation: 2,
+    shadowOpacity: 0.08, shadowRadius: 6, elevation: 2,
   },
-  routeCardBest: { borderColor: '#003087', borderWidth: 2 },
+  routeCardBest: { borderWidth: 2 },
   routeCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  routeRank: { fontSize: 16, fontWeight: '700', color: '#1a1c1e' },
-  bestBadge: { fontSize: 10, fontWeight: '700', color: '#003087', backgroundColor: '#dbe1ff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  routeRank: { fontSize: 16, fontWeight: '700' },
+  bestBadge: { fontSize: 10, fontWeight: '700', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   routeScore: { marginLeft: 'auto', fontSize: 14, fontWeight: '700' },
-  routeRecommendation: { fontSize: 11, color: '#747683', fontStyle: 'italic' },
+  routeRecommendation: { fontSize: 11, fontStyle: 'italic' },
   routeStats: { flexDirection: 'row', gap: 12 },
-  routeStat: { fontSize: 12, fontWeight: '600', color: '#444652' },
+  routeStat: { fontSize: 12, fontWeight: '600' },
   trafficText: { fontSize: 11, fontWeight: '500' },
-  gasText: { fontSize: 11, color: '#f57c00', fontWeight: '500' },
+  gasText: { fontSize: 11, fontWeight: '500' },
 });

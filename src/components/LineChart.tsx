@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Line, Circle, G, Text as SvgText } from 'react-native-svg';
+import { useAppColor } from '@/hooks/useAppColor';
 
 type DataPoint = { label: string; value: number };
 
@@ -17,11 +18,14 @@ export function LineChart({
   data,
   width = 340,
   height = 200,
-  color = '#003087',
-  fillColor = 'rgba(0,48,135,0.08)',
+  color,
+  fillColor,
   showLabels = true,
   showGrid = true,
 }: LineChartProps) {
+  const colors = useAppColor();
+  const lineColor = color || colors.accentPetrol;
+  const areaFill = fillColor || colors.accentPetrol + '15';
   if (data.length === 0) return null;
 
   const padding = { top: 20, right: 16, bottom: 32, left: 48 };
@@ -47,8 +51,8 @@ export function LineChart({
         const label = (min + range * pct).toFixed(2);
         return (
           <G key={i}>
-            <Line x1={padding.left} y1={y} x2={padding.left + chartW} y2={y} stroke="#e2e2e5" strokeWidth={1} />
-            <SvgText x={padding.left - 8} y={y + 4} fill="#747683" fontSize={10} textAnchor="end">
+            <Line x1={padding.left} y1={y} x2={padding.left + chartW} y2={y} stroke={colors.border} strokeWidth={1} />
+            <SvgText x={padding.left - 8} y={y + 4} fill={colors.textMuted} fontSize={10} textAnchor="end">
               {label}
             </SvgText>
           </G>
@@ -60,10 +64,10 @@ export function LineChart({
     <View style={styles.container}>
       <Svg width={width} height={height}>
         {gridLines}
-        <Path d={`M${areaPoints}Z`} fill={fillColor} />
-        <Path d={`M${linePoints}`} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        <Path d={`M${areaPoints}Z`} fill={areaFill} />
+        <Path d={`M${linePoints}`} fill="none" stroke={lineColor} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         {data.map((d, i) => (
-          <Circle key={i} cx={toX(i)} cy={toY(d.value)} r={3} fill={color} />
+          <Circle key={i} cx={toX(i)} cy={toY(d.value)} r={3} fill={lineColor} />
         ))}
         {showLabels &&
           data.filter((_, i) => i % Math.max(1, Math.floor(data.length / 6)) === 0 || i === data.length - 1).map((d, i) => {
@@ -73,7 +77,7 @@ export function LineChart({
                 key={i}
                 x={toX(idx)}
                 y={height - 8}
-                fill="#747683"
+                fill={colors.textMuted}
                 fontSize={10}
                 textAnchor="middle"
               >
