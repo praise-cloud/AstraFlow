@@ -1,5 +1,6 @@
-import React, { useState, useImperativeHandle } from 'react';
+import React, { useImperativeHandle, useRef, useCallback } from 'react';
 import { Platform, View, Text, StyleSheet, ViewProps } from 'react-native';
+import { WebView } from 'react-native-webview';
 
 type LatLng = { latitude: number; longitude: number };
 
@@ -36,63 +37,80 @@ export type MapViewHandle = {
   animateToRegion?: (region: Region, duration?: number) => void;
 };
 
-const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
+const isWeb = Platform.OS === 'web';
 
-let NativeMapView: any = null;
-let NativeMarker: any = null;
-let NativePolyline: any = null;
-let PROVIDER_GOOGLE: any = null;
-let mapLoaded = false;
+function buildLeafletHtml(region: Region, markers: any[], polylines: any[]): string {
+  const center = `${region.latitude},${region.longitude}`;
+  const zoom = Math.round(Math.log2(360 / Math.max(region.latitudeDelta, region.longitudeDelta)));
 
-if (isNative) {
-  try {
-    const Maps = require('react-native-maps');
-    NativeMapView = Maps.default || Maps.MapView;
-    NativeMarker = Maps.Marker;
-    NativePolyline = Maps.Polyline;
-    PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
-    mapLoaded = true;
-  } catch (e) {
-    console.warn('react-native-maps failed to load:', e);
-  }
+  const markerJs = markers.map((m: any, i: number) =>
+    `L.marker([${m.coordinate.latitude}, ${m.coordinate.longitude}])` +
+    `.bindPopup('${m.title || ''}')` +
+    `${i === 0 ? ".addTo(map)" : ".addTo(map)"}`
+  ).join(';\n');
+
+  const polylineJs = polylines.map((p: any) => {
+    const coords = p.coordinates.map((c: any) => `[${c.latitude}, ${c.longitude}]`).join(',');
+    return `L.polyline([${coords}], {color: '${p.strokeColor || '#003087'}', weight: ${p.strokeWidth || 3}}).addTo(map)`;
+  }).join(';\n');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <style>
+        body { margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+        var map = L.map('map').setView([${center}], ${zoom});
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap',
+          maxZoom: 19,
+        }).addTo(map);
+        ${markerJs};
+        ${polylineJs};
+      </script>
+    </body>
+    </html>
+  `;
 }
 
 const MapViewComponent = React.forwardRef<MapViewHandle, MapViewProps>(
-  ({ style, initialRegion, showsUserLocation, showsTraffic, children, ...props }, ref) => {
-    const [loadFailed] = useState(!mapLoaded);
-    const nativeRef = React.useRef<any>(null);
+  (props, ref) => {
+    const { style, initialRegion, children } = props;
+    const webViewRef = useRef<any>(null);
+
+    const markers: any[] = [];
+    const polylines: any[] = [];
+    React.Children.forEach(children, (child: any) => {
+      if (child?.type?.displayName === 'Marker' || child?.type?.name === 'MarkerComponent') {
+        markers.push(child.props);
+      }
+      if (child?.type?.displayName === 'Polyline' || child?.type?.name === 'PolylineComponent') {
+        polylines.push(child.props);
+      }
+    });
 
     useImperativeHandle(ref, () => ({
       animateToRegion: (region: Region, duration?: number) => {
-        if (nativeRef.current?.animateToRegion) {
-          nativeRef.current.animateToRegion(region, duration);
+        if (webViewRef.current) {
+          const zoom = Math.round(Math.log2(360 / Math.max(region.latitudeDelta, region.longitudeDelta)));
+          setTimeout(() => {
+            webViewRef.current.injectJavaScript(`
+              map.setView([${region.latitude}, ${region.longitude}], ${zoom});
+              true;
+            `);
+          }, duration ?? 0);
         }
       },
     }));
-
-    if (isNative && loadFailed) {
-      return (
-        <View style={[styles.fallback, style]}>
-          <Text style={styles.fallbackTitle}>Map Unavailable</Text>
-          <Text style={styles.fallbackText}>The map library could not be loaded.</Text>
-        </View>
-      );
-    }
-
-    if (isNative && NativeMapView) {
-      return React.createElement(
-        NativeMapView,
-        {
-          ...props,
-          ref: nativeRef,
-          style,
-          initialRegion,
-          showsUserLocation,
-          showsTraffic,
-        },
-        children
-      );
-    }
 
     if (!initialRegion) {
       return (
@@ -102,68 +120,68 @@ const MapViewComponent = React.forwardRef<MapViewHandle, MapViewProps>(
       );
     }
 
-    const lat = initialRegion.latitude;
-    const lng = initialRegion.longitude;
-    const src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.1},${lat - 0.1},${lng + 0.1},${lat + 0.1}&layer=mapnik&marker=${lat},${lng}`;
+    const html = buildLeafletHtml(initialRegion, markers, polylines);
+
+    if (isWeb) {
+      return (
+        <View style={[styles.container, style]}>
+          <iframe
+            srcDoc={html}
+            style={styles.iframe}
+            title="OpenStreetMap"
+            allowFullScreen
+          />
+        </View>
+      );
+    }
 
     return (
-      <View style={[styles.webContainer, style]}>
-        <iframe
-          src={src}
-          style={styles.webIframe}
-          title="OpenStreetMap"
-          allowFullScreen
+      <View style={[styles.container, style]}>
+        <WebView
+          ref={webViewRef}
+          source={{ html }}
+          style={styles.webview}
+          javaScriptEnabled
+          domStorageEnabled
+          scrollEnabled={false}
+          bounces={false}
+          overScrollMode="never"
         />
       </View>
     );
   }
 );
 
-const MarkerComponent: React.FC<MarkerProps & ViewProps> = (props) => {
-  if (isNative && NativeMarker) {
-    return React.createElement(NativeMarker, props);
-  }
-  return null;
-};
+const MarkerComponent: React.FC<MarkerProps & ViewProps> = () => null;
+MarkerComponent.displayName = 'MarkerComponent';
 
-const PolylineComponent: React.FC<PolylineProps & ViewProps> = (props) => {
-  if (isNative && NativePolyline) {
-    return React.createElement(NativePolyline, props);
-  }
-  return null;
-};
+const PolylineComponent: React.FC<PolylineProps & ViewProps> = () => null;
+PolylineComponent.displayName = 'PolylineComponent';
 
-export { PROVIDER_GOOGLE };
 export const MapView = MapViewComponent;
 export const Marker = MarkerComponent;
 export const Polyline = PolylineComponent;
 
 const styles = StyleSheet.create({
+  container: {
+    overflow: 'hidden',
+  },
   fallback: {
     backgroundColor: '#1c1c22',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
-  fallbackIcon: {
-    fontSize: 40,
-    marginBottom: 12,
-  },
   fallbackTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#eeeef0',
-    marginBottom: 4,
   },
-  fallbackText: {
-    fontSize: 12,
-    color: '#6a6a7a',
-    textAlign: 'center',
+  webview: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
-  webContainer: {
-    overflow: 'hidden',
-  },
-  webIframe: {
+  iframe: {
     width: '100%',
     height: '100%',
     borderWidth: 0,

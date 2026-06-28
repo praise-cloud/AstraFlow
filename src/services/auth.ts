@@ -144,6 +144,18 @@ export function isAuthenticated(): boolean | Promise<boolean> {
   return isAuthenticatedNative();
 }
 
+export async function restoreAuth(): Promise<boolean> {
+  if (isWeb()) return lsGet(TOKEN_KEY) !== null;
+  const token = await getTokenNative();
+  if (token) {
+    _inMemoryToken = token;
+    const user = await getUserNative();
+    if (user) _inMemoryUser = user;
+    return true;
+  }
+  return false;
+}
+
 export async function getTokenAsync(): Promise<string | null> {
   if (isWeb()) return Promise.resolve(lsGet(TOKEN_KEY));
   if (_inMemoryToken) return _inMemoryToken;
