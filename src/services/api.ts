@@ -39,7 +39,10 @@ async function request<T = any>(
 
   let res: Response;
   try {
-    res = await fetch(url, { ...options, headers });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    res = await fetch(url, { ...options, headers, signal: controller.signal });
+    clearTimeout(timeout);
   } catch {
     if (isRead) {
       const cached = getCache<T>(path, Infinity);
