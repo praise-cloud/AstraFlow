@@ -9,11 +9,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.db.database import init_db
 from backend.routes import auth, dashboard, predict, prices, surveys, notifications, news, routes
+from backend.seed import seed
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    seed()
     yield
 
 
@@ -34,6 +36,16 @@ app.include_router(surveys.router)
 app.include_router(notifications.router)
 app.include_router(news.router)
 app.include_router(routes.router)
+
+
+@app.get("/")
+def root():
+    return {
+        "message": "Welcome to AstraFlow API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/api/health",
+    }
 
 
 @app.get("/api/health")

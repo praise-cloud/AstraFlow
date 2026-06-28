@@ -7,9 +7,11 @@ load_dotenv(Path(__file__).parent / ".env")
 
 from backend.db.database import SessionLocal, init_db
 from backend.models.fuel_price import FuelPrice
+from backend.models.news import OilNews
 from backend.models.recommendation import Recommendation
 from backend.models.user import BusinessType
 from backend.services.scraper import fetch_retail_prices
+from backend.services.news_scraper import fetch_news
 
 
 def seed():
@@ -85,6 +87,23 @@ def seed():
         print(f"Seeded {len(recs)} recommendations.")
     else:
         print("Recommendations already exist. Skipping.")
+
+    news_exist = db.query(OilNews).first()
+    if not news_exist:
+        print("Fetching news articles...")
+        articles = fetch_news()
+        for a in articles:
+            db.add(OilNews(
+                title=a["title"],
+                summary=a["summary"],
+                content=a["content"],
+                source=a["source"],
+                published_at=a["published_at"],
+            ))
+        db.commit()
+        print(f"Seeded {len(articles)} news articles.")
+    else:
+        print("News articles already exist. Skipping.")
 
     db.close()
     print("Seed complete.")
