@@ -4,12 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { azureClarityConfig } from '@/theme/azure-clarity';
 import { isAuthenticated, restoreAuth } from '@/services/auth';
 import { registerForPushNotifications } from '@/services/notifications';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useAppColor } from '@/hooks/useAppColor';
+import { readyPromise as i18nReady } from '@/i18n';
 
 function useProtectedRoute() {
   const segments = useSegments();
@@ -41,14 +43,21 @@ function useProtectedRoute() {
 
 function RootLayoutInner() {
   const [isReady, setIsReady] = useState(false);
+  const [i18nLoaded, setI18nLoaded] = useState(false);
   const authChecked = useProtectedRoute();
   const { theme } = useTheme();
   const colors = useAppColor();
+  const { t } = useTranslation();
 
   useEffect(() => {
+    i18nReady.then(() => setI18nLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!i18nLoaded) return;
     const timer = setTimeout(() => setIsReady(true), 1500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [i18nLoaded]);
 
   if (!isReady || !authChecked) {
     return (
@@ -59,14 +68,14 @@ function RootLayoutInner() {
               <MaterialCommunityIcons name="gas-station" size={80} color={colors.accentPetrol} />
             </View>
           </View>
-          <Text style={[styles.brandName, { color: colors.accentPetrol }]}>AstraFlow</Text>
-          <Text style={[styles.tagline, { color: colors.textSecondary }]}>Intelligent Fuel Insights</Text>
+          <Text style={[styles.brandName, { color: colors.accentPetrol }]}>{t('splash.title')}</Text>
+          <Text style={[styles.tagline, { color: colors.textSecondary }]}>{t('splash.subtitle')}</Text>
           <View style={styles.dots}>
             <Text style={[styles.dot, { color: colors.accentPetrol }]}>.</Text>
             <Text style={[styles.dot, { color: colors.accentPetrol }]}>.</Text>
             <Text style={[styles.dot, { color: colors.accentPetrol }]}>.</Text>
           </View>
-          <Text style={[styles.footer, { color: colors.textMuted }]}>Secure & Efficient</Text>
+          <Text style={[styles.footer, { color: colors.textMuted }]}>{t('splash.footer')}</Text>
         </View>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       </GluestackUIProvider>

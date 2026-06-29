@@ -1,3 +1,4 @@
+import re
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -29,12 +30,13 @@ def _ensure_table():
 def list_news(db: Session = Depends(get_db)):
     _ensure_table()
     articles = db.query(OilNews).order_by(OilNews.published_at.desc()).all()
+    strip = lambda t: re.sub(r'<[^>]+>', '', t).strip() if t else t
     return [
         {
             "id": a.id,
             "title": a.title,
-            "summary": a.summary,
-            "content": a.content,
+            "summary": strip(a.summary),
+            "content": strip(a.content),
             "source": a.source,
             "image_url": a.image_url,
             "published_at": a.published_at.isoformat(),

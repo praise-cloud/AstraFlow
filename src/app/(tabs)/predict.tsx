@@ -6,6 +6,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { api } from '@/services/api';
 import { LineChart } from '@/components/LineChart';
+import { useTranslation } from 'react-i18next';
 import { useAppColor } from '@/hooks/useAppColor';
 
 type ForecastData = {
@@ -25,6 +26,7 @@ type ForecastData = {
 
 export default function PredictScreen() {
   const colors = useAppColor();
+  const { t } = useTranslation();
   const [liters, setLiters] = useState('');
   const [loading, setLoading] = useState(false);
   const [forecastLoading, setForecastLoading] = useState(true);
@@ -65,7 +67,7 @@ export default function PredictScreen() {
   const handleCalculate = async () => {
     const val = parseFloat(liters);
     if (!val || val <= 0) {
-      setError('Please enter a valid volume');
+      setError(t('predict.enterValidVolume'));
       return;
     }
     setLoading(true);
@@ -89,7 +91,7 @@ export default function PredictScreen() {
       };
       setResult(fallback);
       setShowResult(true);
-      setError('Could not reach server — showing estimate');
+      setError(t('predict.serverError'));
     } finally {
       setLoading(false);
     }
@@ -102,7 +104,7 @@ export default function PredictScreen() {
       <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <View style={styles.headerLeft}>
           <MaterialCommunityIcons name="gas-station-outline" size={22} color={colors.accentPetrol} />
-          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>AstraFlow</Text>
+          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>{t('predict.header')}</Text>
         </View>
         <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
           <Ionicons name="person-outline" size={22} color={colors.textMuted} />
@@ -130,7 +132,7 @@ export default function PredictScreen() {
               ]}
               onPress={() => setSelectedFuel('petrol')}
             >
-              <Text style={[styles.fuelBtnText, { color: colors.textMuted }, selectedFuel === 'petrol' && { color: colors.accentPetrol }]}>Petrol</Text>
+              <Text style={[styles.fuelBtnText, { color: colors.textMuted }, selectedFuel === 'petrol' && { color: colors.accentPetrol }]}>{t('common.petrol')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -140,23 +142,23 @@ export default function PredictScreen() {
               ]}
               onPress={() => setSelectedFuel('diesel')}
             >
-              <Text style={[styles.fuelBtnText, { color: colors.textMuted }, selectedFuel === 'diesel' && { color: colors.accentDiesel }]}>Diesel</Text>
+              <Text style={[styles.fuelBtnText, { color: colors.textMuted }, selectedFuel === 'diesel' && { color: colors.accentDiesel }]}>{t('common.diesel')}</Text>
             </TouchableOpacity>
           </View>
 
           {forecastLoading ? (
             <View style={styles.forecastLoading}>
               <ActivityIndicator size="small" color={colors.accentPetrol} />
-              <Text style={[styles.forecastLoadingText, { color: colors.textMuted }]}>Running ML model...</Text>
+              <Text style={[styles.forecastLoadingText, { color: colors.textMuted }]}>{t('predict.runningModel')}</Text>
             </View>
           ) : forecast ? (
             <>
               <View style={styles.forecastHeader}>
                 <View>
-                  <Text style={[styles.forecastLabel, { color: colors.textMuted }]}>30-Day Forecast</Text>
+                  <Text style={[styles.forecastLabel, { color: colors.textMuted }]}>{t('predict.forecast30d')}</Text>
                   <Text style={[styles.forecastPrice, { color: colors.textPrimary }]}>
                     Rs {forecast.avg_forecast.toFixed(3)}
-                    <Text style={[styles.forecastUnit, { color: colors.textMuted }]}> /L avg</Text>
+                    <Text style={[styles.forecastUnit, { color: colors.textMuted }]}> {t('predict.perLitreAvg')}</Text>
                   </Text>
                 </View>
                 <View style={[styles.trendBadge, { backgroundColor: TREND_COLORS[forecast.trend] + '20' }]}>
@@ -173,7 +175,7 @@ export default function PredictScreen() {
               />
 
               <View style={styles.forecastMeta}>
-                <Text style={[styles.modelLabel, { color: colors.textMuted }]}>Model: {forecast.model}</Text>
+                <Text style={[styles.modelLabel, { color: colors.textMuted }]}>{t('predict.modelInfo', { model: forecast.model })}</Text>
               </View>
 
               {forecast.recommendation.urgency !== 'none' && (
@@ -184,38 +186,38 @@ export default function PredictScreen() {
               )}
             </>
           ) : (
-            <Text style={[styles.noDataText, { color: colors.textMuted }]}>Unable to load forecast</Text>
+            <Text style={[styles.noDataText, { color: colors.textMuted }]}>{t('predict.noForecast')}</Text>
           )}
         </View>
 
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Current</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('predict.current')}</Text>
             <Text style={[styles.statValue, { color: colors.textPrimary }]}>Rs {forecast?.current_price.toFixed(3) || '—'}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Min</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('predict.min')}</Text>
             <Text style={[styles.statValue, { color: colors.textPrimary }]}>Rs {forecast?.min_forecast.toFixed(3) || '—'}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Max</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('predict.max')}</Text>
             <Text style={[styles.statValue, { color: colors.textPrimary }]}>Rs {forecast?.max_forecast.toFixed(3) || '—'}</Text>
           </View>
         </View>
 
         <View style={[styles.inputCard, { backgroundColor: colors.bgCard, borderColor: colors.borderInput }]}>
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>YOUR CONSUMPTION</Text>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('predict.yourConsumption')}</Text>
           <View style={styles.inputRow}>
             <TextInput
               style={[styles.input, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bg }]}
-              placeholder="e.g. 50"
+              placeholder={t('predict.consumptionPlaceholder')}
               placeholderTextColor={colors.textMuted}
               value={liters}
               onChangeText={(v) => { setLiters(v); setError(null); }}
               keyboardType="numeric"
               editable={!loading}
             />
-            <Text style={[styles.inputSuffix, { color: colors.textMuted }]}>L</Text>
+            <Text style={[styles.inputSuffix, { color: colors.textMuted }]}>{t('common.litre')}</Text>
           </View>
 
           <TouchableOpacity
@@ -227,7 +229,7 @@ export default function PredictScreen() {
               <ActivityIndicator size="small" color={colors.textWhite} />
             ) : (
               <>
-                <Text style={[styles.calcButtonText, { color: colors.textWhite }]}>Project My Costs</Text>
+                <Text style={[styles.calcButtonText, { color: colors.textWhite }]}>{t('predict.projectMyCosts')}</Text>
                 <Ionicons name="analytics-outline" size={20} color={colors.textWhite} />
               </>
             )}
@@ -240,7 +242,7 @@ export default function PredictScreen() {
               <View style={styles.resultHeader}>
                 <View>
                   <Text style={[styles.resultLabel, { color: colors.textWhite, opacity: 0.8 }]}>
-                    {result.forecast.trend === 'up' ? 'Projected Cost (30d)' : 'Current Cost'}
+                    {result.forecast.trend === 'up' ? t('predict.projectedCost') : t('predict.currentCost')}
                   </Text>
                   <Text style={[styles.resultPrice, { color: colors.textWhite }]}>Rs {result.total_cost.toFixed(2)}</Text>
                 </View>
@@ -251,15 +253,15 @@ export default function PredictScreen() {
               <View style={[styles.divider, { backgroundColor: colors.textWhite + '1a' }]} />
               <View style={styles.resultGrid}>
                 <View>
-                  <Text style={[styles.resultGridLabel, { color: colors.textWhite, opacity: 0.7 }]}>Price / L</Text>
+                  <Text style={[styles.resultGridLabel, { color: colors.textWhite, opacity: 0.7 }]}>{t('predict.pricePerL')}</Text>
                   <Text style={[styles.resultGridValue, { color: colors.textWhite }]}>Rs {result.price_per_liter.toFixed(3)}</Text>
                 </View>
                 <View>
-                  <Text style={[styles.resultGridLabel, { color: colors.textWhite, opacity: 0.7 }]}>Carbon</Text>
+                  <Text style={[styles.resultGridLabel, { color: colors.textWhite, opacity: 0.7 }]}>{t('predict.carbon')}</Text>
                   <Text style={[styles.resultGridValue, { color: colors.textWhite }]}>{result.carbon_footprint_kg.toFixed(1)} kg</Text>
                 </View>
                 <View>
-                  <Text style={[styles.resultGridLabel, { color: colors.textWhite, opacity: 0.7 }]}>Forecast Δ</Text>
+                  <Text style={[styles.resultGridLabel, { color: colors.textWhite, opacity: 0.7 }]}>{t('predict.forecastDelta')}</Text>
                   <Text style={[styles.resultGridValue, { color: result.future_increase_pct > 0 ? colors.trendUp : colors.trendDown }]}>
                     {result.future_increase_pct > 0 ? '+' : ''}{result.future_increase_pct.toFixed(1)}%
                   </Text>

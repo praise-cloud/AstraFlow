@@ -1,3 +1,4 @@
+import re
 from datetime import date
 from xml.etree import ElementTree
 import httpx
@@ -106,10 +107,11 @@ def fetch_news() -> list[dict]:
                     pub_date = dt.strptime(pub_date_str[:25], "%a, %d %b %Y %H:%M:%S").date()
                 except ValueError:
                     pass
+            clean_desc = re.sub(r'<[^>]+>', '', description).strip()
             articles.append({
                 "title": title,
-                "summary": description[:200] if description else title,
-                "content": f"{description}\n\nRead more: {link}",
+                "summary": clean_desc[:200] if clean_desc else title,
+                "content": f"{clean_desc}\n\nRead more: {link}" if clean_desc else link,
                 "source": source,
                 "published_at": pub_date,
             })

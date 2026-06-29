@@ -1,10 +1,10 @@
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { LightColors, DarkColors } from '@/theme/appColors';
 import { useTheme } from '@/context/ThemeContext';
 
-const TAB_ICONS: Record<string, { focused: any; unfocused: any }> = {
+const ICONS: Record<string, { focused: any; unfocused: any }> = {
   index: { focused: 'home', unfocused: 'home-outline' },
   prices: { focused: 'cash', unfocused: 'cash-outline' },
   predict: { focused: 'analytics', unfocused: 'analytics-outline' },
@@ -12,81 +12,64 @@ const TAB_ICONS: Record<string, { focused: any; unfocused: any }> = {
   profile: { focused: 'person', unfocused: 'person-outline' },
 };
 
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const { theme } = useTheme();
-  const colors = theme === 'dark' ? DarkColors : LightColors;
-  const icon = TAB_ICONS[name];
-  if (!icon) return null;
-  return (
-    <View style={[styles.tabItem, focused && { backgroundColor: colors.bgTabActive }]}>
-      <Ionicons
-        name={focused ? icon.focused : icon.unfocused}
-        size={22}
-        color={focused ? colors.tabActive : colors.tabInactive}
-      />
-      <Text style={[styles.tabLabel, { color: focused ? colors.tabActive : colors.tabInactive }]}>
-        {name === 'index' ? 'Home' : name.charAt(0).toUpperCase() + name.slice(1)}
-      </Text>
-    </View>
-  );
-}
-
 export default function TabLayout() {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? DarkColors : LightColors;
+  const { t } = useTranslation();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: colors.tabBg, borderTopColor: colors.tabBorder, borderTopWidth: 1, height: 70, paddingBottom: 8, paddingTop: 8 },
-        tabBarShowLabel: false,
+        tabBarActiveTintColor: colors.tabActive,
+        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarStyle: { backgroundColor: colors.tabBg, borderTopColor: colors.tabBorder, borderTopWidth: 1, height: 60, paddingBottom: 6, paddingTop: 6 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="index" focused={focused} />,
+          title: t('tabs.home'),
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? ICONS.index.focused : ICONS.index.unfocused} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="prices"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="prices" focused={focused} />,
+          title: t('tabs.prices'),
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? ICONS.prices.focused : ICONS.prices.unfocused} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="predict"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="predict" focused={focused} />,
+          title: t('tabs.predict'),
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? ICONS.predict.focused : ICONS.predict.unfocused} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="routes"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="routes" focused={focused} />,
+          title: t('tabs.routes'),
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? ICONS.routes.focused : ICONS.routes.unfocused} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="profile" focused={focused} />,
+          title: t('tabs.profile'),
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? ICONS.profile.focused : ICONS.profile.unfocused} size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  tabLabel: {
-    fontSize: 11,
-    marginTop: 2,
-    fontWeight: '500',
-  },
-});

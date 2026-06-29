@@ -4,17 +4,10 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
+import { useTranslation } from 'react-i18next';
 import { api } from '@/services/api';
 import { setToken, setUser } from '@/services/auth';
 import { useAppColor } from '@/hooks/useAppColor';
-
-const BUSINESS_TYPES = [
-  { id: 'restaurant', label: 'Restaurant', icon: 'restaurant-outline' },
-  { id: 'taxi', label: 'Taxi Driver', icon: 'car-outline' },
-  { id: 'delivery', label: 'Delivery Business', icon: 'cube-outline' },
-  { id: 'retail', label: 'Retail Shop', icon: 'storefront-outline' },
-  { id: 'logistics', label: 'Logistics Company', icon: 'bus-outline' },
-];
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
@@ -25,10 +18,19 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const colors = useAppColor();
+  const { t } = useTranslation();
+
+  const BUSINESS_TYPES = [
+    { id: 'restaurant', label: t('register.businessRestaurant'), icon: 'restaurant-outline' },
+    { id: 'taxi', label: t('register.businessTaxi'), icon: 'car-outline' },
+    { id: 'delivery', label: t('register.businessDelivery'), icon: 'cube-outline' },
+    { id: 'retail', label: t('register.businessRetail'), icon: 'storefront-outline' },
+    { id: 'logistics', label: t('register.businessLogistics'), icon: 'bus-outline' },
+  ];
 
   const handleRegister = async () => {
     if (!fullName || !email || !password || !businessType) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Error', t('register.fillAllFields'));
       return;
     }
     setLoading(true);
@@ -42,7 +44,7 @@ export default function RegisterScreen() {
       await Promise.all([setToken(res.token), setUser(res.user)]);
       router.replace('/');
     } catch (err: any) {
-      Alert.alert('Registration Failed', err.detail || err.message);
+      Alert.alert(t('register.registrationFailed'), err.detail || err.message);
     } finally {
       setLoading(false);
     }
@@ -59,18 +61,18 @@ export default function RegisterScreen() {
             <View style={[styles.logo, { backgroundColor: colors.accentPetrol }]}>
               <MaterialCommunityIcons name="gas-station-outline" size={48} color={colors.textWhite} />
             </View>
-            <Text style={[styles.brandName, { color: colors.accentPetrol }]}>AstraFlow</Text>
+            <Text style={[styles.brandName, { color: colors.accentPetrol }]}>{t('common.appName')}</Text>
             <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-              Create your account to start predicting energy flows and price shifts.
+              {t('register.tagline')}
             </Text>
           </View>
 
           <View style={[styles.formCard, { backgroundColor: colors.bgCard, borderColor: colors.borderInput }]}>
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>FULL NAME</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('register.fullNameLabel')}</Text>
               <TextInput
                 style={[styles.input, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
-                placeholder="Enter your name"
+                placeholder={t('register.fullNamePlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 value={fullName}
                 onChangeText={setFullName}
@@ -78,10 +80,10 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>EMAIL ADDRESS</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('register.emailLabel')}</Text>
               <TextInput
                 style={[styles.input, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
-                placeholder="name@company.com"
+                placeholder={t('register.emailPlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 value={email}
                 onChangeText={setEmail}
@@ -91,11 +93,11 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>PASSWORD</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('register.passwordLabel')}</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[styles.passwordInput, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
-                  placeholder="Min. 8 characters"
+                  placeholder={t('register.passwordPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={password}
                   onChangeText={setPassword}
@@ -111,7 +113,7 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>BUSINESS TYPE</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('register.businessTypeLabel')}</Text>
               <View style={styles.businessGrid}>
                 {BUSINESS_TYPES.map((bt) => (
                   <TouchableOpacity
@@ -146,24 +148,24 @@ export default function RegisterScreen() {
                 <ActivityIndicator size="small" color={colors.textWhite} />
               ) : (
                 <>
-                  <Text style={[styles.buttonText, { color: colors.textWhite }]}>Create Account</Text>
+                  <Text style={[styles.buttonText, { color: colors.textWhite }]}>{t('register.createAccount')}</Text>
                   <Ionicons name="arrow-forward" size={20} color={colors.textWhite} />
                 </>
               )}
             </TouchableOpacity>
 
             <Text style={[styles.termsText, { color: colors.textMuted }]}>
-              By signing up, you agree to our{' '}
-              <Text style={[styles.linkInline, { color: colors.accentPetrol }]}>Terms of Service</Text> and{' '}
-              <Text style={[styles.linkInline, { color: colors.accentPetrol }]}>Privacy Policy</Text>.
+              {t('register.termsPrefix')}{' '}
+              <Text style={[styles.linkInline, { color: colors.accentPetrol }]}>{t('register.termsOfService')}</Text> and{' '}
+              <Text style={[styles.linkInline, { color: colors.accentPetrol }]}>{t('register.privacyPolicy')}</Text>.
             </Text>
           </View>
 
           <View style={styles.footerSection}>
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              Already have an account?{' '}
+              {t('register.hasAccount')}{' '}
               <Text style={[styles.linkText, { color: colors.accentPetrol }]} onPress={() => router.back()}>
-                Log in
+                {t('register.logIn')}
               </Text>
             </Text>
           </View>

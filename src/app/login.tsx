@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
+import { useTranslation } from 'react-i18next';
 import { useAppColor } from '@/hooks/useAppColor';
 import { api } from '@/services/api';
 import { setToken, setUser } from '@/services/auth';
@@ -15,14 +16,15 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const colors = useAppColor();
+  const { t } = useTranslation();
 
   const handleLogin = async () => {
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert('Error', t('login.enterEmail'));
       return;
     }
     if (!password) {
-      Alert.alert('Error', 'Please enter your password');
+      Alert.alert('Error', t('login.enterPassword'));
       return;
     }
     setLoading(true);
@@ -31,7 +33,7 @@ export default function LoginScreen() {
       await Promise.all([setToken(res.token), setUser(res.user)]);
       router.replace('/');
     } catch (err: any) {
-      Alert.alert('Login Failed', err.detail || err.message || 'Unable to sign in');
+      Alert.alert(t('login.loginFailed'), err.detail || err.message || t('login.unableToSignIn'));
     } finally {
       setLoading(false);
     }
@@ -48,18 +50,18 @@ export default function LoginScreen() {
             <View style={[styles.logo, { backgroundColor: colors.accentPetrol }]}>
               <MaterialCommunityIcons name="gas-station-outline" size={48} color={colors.textWhite} />
             </View>
-            <Text style={[styles.brandName, { color: colors.accentPetrol }]}>AstraFlow</Text>
+            <Text style={[styles.brandName, { color: colors.accentPetrol }]}>{t('common.appName')}</Text>
             <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-              Sign in to access your fuel insights and predictions.
+              {t('login.tagline')}
             </Text>
           </View>
 
           <View style={[styles.formCard, { backgroundColor: colors.bgCard, borderColor: colors.borderInput }]}>
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>EMAIL ADDRESS</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('login.emailLabel')}</Text>
               <TextInput
                 style={[styles.input, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
-                placeholder="name@company.com"
+                placeholder={t('login.emailPlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 value={email}
                 onChangeText={setEmail}
@@ -71,11 +73,11 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>PASSWORD</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('login.passwordLabel')}</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[styles.passwordInput, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
-                  placeholder="Enter your password"
+                  placeholder={t('login.passwordPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={password}
                   onChangeText={setPassword}
@@ -101,7 +103,7 @@ export default function LoginScreen() {
                 <ActivityIndicator size="small" color={colors.textWhite} />
               ) : (
                 <>
-                  <Text style={[styles.buttonText, { color: colors.textWhite }]}>Sign In</Text>
+                  <Text style={[styles.buttonText, { color: colors.textWhite }]}>{t('login.signIn')}</Text>
                   <Ionicons name="arrow-forward" size={20} color={colors.textWhite} />
                 </>
               )}
@@ -110,9 +112,9 @@ export default function LoginScreen() {
 
           <View style={styles.footerSection}>
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              Don't have an account?{' '}
+              {t('login.noAccount')}{' '}
               <Text style={[styles.linkText, { color: colors.accentPetrol }]} onPress={() => router.push('/register')}>
-                Create one
+                {t('login.createOne')}
               </Text>
             </Text>
           </View>

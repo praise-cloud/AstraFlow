@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
+import { useTranslation } from 'react-i18next';
 import { useAppColor } from '@/hooks/useAppColor';
 import { api } from '@/services/api';
 import { LineChart } from '@/components/LineChart';
@@ -53,6 +54,7 @@ export default function PricesScreen() {
   const [selectedDays, setSelectedDays] = useState(30);
 
   const colors = useAppColor();
+  const { t } = useTranslation();
   const color = selectedFuel === 'petrol' ? colors.accentPetrol : colors.accentDiesel;
   const fuelKey = selectedFuel;
   const otherFuel = selectedFuel === 'petrol' ? 'diesel' : 'petrol';
@@ -67,7 +69,7 @@ export default function PricesScreen() {
         router.replace('/login');
         return;
       }
-      setError('Unable to load price history — showing offline data');
+      setError(t('prices.errorOffline'));
       setHistory(makeMockData(days));
     } finally {
       setLoading(false);
@@ -145,7 +147,7 @@ export default function PricesScreen() {
       <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <View style={styles.headerLeft}>
           <MaterialCommunityIcons name="gas-station-outline" size={22} color={colors.accentPetrol} />
-          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>AstraFlow</Text>
+          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>{t('prices.header')}</Text>
         </View>
         <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
           <Ionicons name="person-outline" size={22} color={colors.textMuted} />
@@ -160,7 +162,7 @@ export default function PricesScreen() {
         {error && (
           <TouchableOpacity style={[styles.errorBanner, { backgroundColor: colors.bgError }]} onPress={() => fetchHistory(selectedDays)}>
             <Text style={[styles.errorText, { color: colors.textError }]}>{error}</Text>
-            <Text style={[styles.retryText, { color: colors.textError }]}>Tap to retry</Text>
+            <Text style={[styles.retryText, { color: colors.textError }]}>{t('common.retry')}</Text>
           </TouchableOpacity>
         )}
 
@@ -201,7 +203,7 @@ export default function PricesScreen() {
               { color: colors.textMuted },
               selectedFuel === 'petrol' && { color: colors.accentPetrol },
             ]}>
-              Petrol
+              {t('common.petrol')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -218,7 +220,7 @@ export default function PricesScreen() {
               { color: colors.textMuted },
               selectedFuel === 'diesel' && { color: colors.accentPetrol },
             ]}>
-              Diesel
+              {t('common.diesel')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -227,7 +229,7 @@ export default function PricesScreen() {
           <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <View style={styles.priceRow}>
               <View>
-                <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{selectedFuel} Price</Text>
+                <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{t('prices.priceTitle', { fuel: selectedFuel })}</Text>
                 <Text style={[styles.priceValue, { color: colors.textPrimary }]}>Rs {latest[fuelKey].toFixed(2)}</Text>
               </View>
               <Sparkline
@@ -247,7 +249,7 @@ export default function PricesScreen() {
         )}
 
         <View style={[styles.chartCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text style={[styles.chartTitle, { color: colors.textSecondary }]}>{selectedFuel} Price Trend — {rangeLabel}</Text>
+          <Text style={[styles.chartTitle, { color: colors.textSecondary }]}>{t('prices.priceTrend', { fuel: selectedFuel, range: rangeLabel })}</Text>
           <LineChart
             data={currentData}
             color={color}
@@ -257,15 +259,15 @@ export default function PricesScreen() {
 
         <View style={styles.statsGrid3}>
           <View style={[styles.statCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Avg</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('prices.avg')}</Text>
             <Text style={[styles.statValue, { color: colors.textPrimary }]}>Rs {summary.avg.toFixed(2)}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Low</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('prices.low')}</Text>
             <Text style={[styles.statValue, { color: colors.textPrimary }]}>Rs {summary.min.toFixed(2)}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>High</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t('prices.high')}</Text>
             <Text style={[styles.statValue, { color: colors.textPrimary }]}>Rs {summary.max.toFixed(2)}</Text>
           </View>
         </View>
@@ -273,22 +275,22 @@ export default function PricesScreen() {
         <View style={styles.infoGrid2}>
           <View style={[styles.infoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <Ionicons name="analytics-outline" size={18} color={colors.accentPetrol} />
-            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{selectedFuel} Volatility</Text>
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('prices.volatility', { fuel: selectedFuel })}</Text>
             <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{volatility.toFixed(1)}%</Text>
-            <Text style={[styles.infoSub, { color: colors.textMuted }]}>Range relative to avg</Text>
+            <Text style={[styles.infoSub, { color: colors.textMuted }]}>{t('prices.rangeRelative')}</Text>
           </View>
           <View style={[styles.infoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <Ionicons name="resize-outline" size={18} color={colors.textMuted} />
-            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Diesel vs Petrol</Text>
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('prices.dieselVsPetrol')}</Text>
             <Text style={[styles.infoValue, { color: colors.textPrimary }]}>Rs {spread.toFixed(2)}</Text>
-            <Text style={[styles.infoSub, { color: colors.textMuted }]}>Diesel costs {spreadPct.toFixed(1)}% more</Text>
+            <Text style={[styles.infoSub, { color: colors.textMuted }]}>{t('prices.dieselMore', { pct: spreadPct.toFixed(1) })}</Text>
           </View>
         </View>
 
         <View style={styles.infoGrid2}>
           <View style={[styles.infoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <Ionicons name="trending-up-outline" size={18} color={colors.trendUp} />
-            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Biggest {selectedFuel} Jump</Text>
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('prices.biggestJump', { fuel: selectedFuel })}</Text>
             <Text style={[styles.infoValue, { color: colors.trendUp }]}>
               {biggestUp ? `Rs ${biggestUp.change.toFixed(3)}` : '\u2014'}
             </Text>
@@ -296,7 +298,7 @@ export default function PricesScreen() {
           </View>
           <View style={[styles.infoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <Ionicons name="trending-down-outline" size={18} color={colors.trendDown} />
-            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Biggest {selectedFuel} Drop</Text>
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('prices.biggestDrop', { fuel: selectedFuel })}</Text>
             <Text style={[styles.infoValue, { color: colors.trendDown }]}>
               {biggestDown ? `Rs ${biggestDown.change.toFixed(3)}` : '\u2014'}
             </Text>
@@ -306,31 +308,31 @@ export default function PricesScreen() {
 
         {weeklyTrend !== null && (
           <View style={[styles.weeklyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.weeklyTitle, { color: colors.textPrimary }]}>{selectedFuel} Mid-Period Shift</Text>
+            <Text style={[styles.weeklyTitle, { color: colors.textPrimary }]}>{t('prices.midPeriodShift', { fuel: selectedFuel })}</Text>
             <Text style={[styles.weeklyValue, { color: weeklyTrend >= 0 ? colors.trendUp : colors.trendDown }]}>
               <Ionicons name={weeklyTrend >= 0 ? "arrow-up" : "arrow-down"} size={24} color={weeklyTrend >= 0 ? colors.trendUp : colors.trendDown} />
               {' '}{Math.abs(weeklyTrend).toFixed(1)}%
             </Text>
-            <Text style={[styles.weeklySub, { color: colors.textMuted }]}>2nd half vs 1st half avg</Text>
+            <Text style={[styles.weeklySub, { color: colors.textMuted }]}>{t('prices.secondHalfVsFirst')}</Text>
           </View>
         )}
 
         <View style={[styles.changeCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: color }]}>
           <View style={styles.changeCardHeader}>
             <View>
-              <Text style={[styles.changeCardFuel, { color: colors.textPrimary }]}>{selectedFuel}</Text>
-              <Text style={[styles.changeCardPrice, { color: colors.textMuted }]}>Rs {summary.avg.toFixed(2)} avg</Text>
+              <Text style={[styles.changeCardFuel, { color: colors.textPrimary }]}>{selectedFuel === 'petrol' ? t('common.petrol') : t('common.diesel')}</Text>
+              <Text style={[styles.changeCardPrice, { color: colors.textMuted }]}>{t('prices.rsAvg', { value: summary.avg.toFixed(2) })}</Text>
             </View>
             <View style={styles.changeCardTrend}>
               <Text style={[styles.changeCardPct, { color: summary.change >= 0 ? colors.trendUp : colors.trendDown }]}>
                 <Ionicons name={summary.change >= 0 ? "arrow-up" : "arrow-down"} size={20} color={summary.change >= 0 ? colors.trendUp : colors.trendDown} />
                 {' '}{Math.abs(summary.change).toFixed(1)}%
               </Text>
-              <Text style={[styles.changeCardLabel, { color: colors.textMuted }]}>{rangeLabel}</Text>
+              <Text style={[styles.changeCardLabel, { color: colors.textMuted }]}>{rangeLabel === '1D' ? '1D' : rangeLabel === '7D' ? '7D' : rangeLabel === '30D' ? '30D' : '90D'}</Text>
             </View>
           </View>
           <Sparkline data={fuelValues} width={300} height={48} color={color} strokeWidth={2} />
-          <Text style={[styles.barTitle, { color: colors.textMuted }]}>Daily Change</Text>
+          <Text style={[styles.barTitle, { color: colors.textMuted }]}>{t('prices.dailyChange')}</Text>
           <View style={styles.barGroup}>
             {dailyChanges.slice(-14).map((d, i) => (
               <View key={i} style={styles.barWrapper}>
@@ -350,15 +352,15 @@ export default function PricesScreen() {
             ))}
           </View>
           <View style={styles.changeStats}>
-            <Text style={[styles.changeStat, { color: colors.textMuted }]}>H: Rs {summary.max.toFixed(2)}</Text>
-            <Text style={[styles.changeStat, { color: colors.textMuted }]}>L: Rs {summary.min.toFixed(2)}</Text>
-            <Text style={[styles.changeStat, { color: colors.textMuted }]}>Range: Rs {(summary.max - summary.min).toFixed(2)}</Text>
+            <Text style={[styles.changeStat, { color: colors.textMuted }]}>{t('prices.hMax', { value: summary.max.toFixed(2) })}</Text>
+            <Text style={[styles.changeStat, { color: colors.textMuted }]}>{t('prices.lMin', { value: summary.min.toFixed(2) })}</Text>
+            <Text style={[styles.changeStat, { color: colors.textMuted }]}>{t('prices.rangeStat', { value: (summary.max - summary.min).toFixed(2) })}</Text>
           </View>
         </View>
 
         {history.length > 0 && (
           <View style={styles.historySection}>
-            <Text style={[styles.historyTitle, { color: colors.textPrimary }]}>Recent {selectedFuel} Prices</Text>
+            <Text style={[styles.historyTitle, { color: colors.textPrimary }]}>{t('prices.recentPrices', { fuel: selectedFuel })}</Text>
             {history.slice(-7).reverse().map((day) => (
               <View key={day.date} style={styles.historyRow}>
                 <Text style={[styles.historyDate, { color: colors.textMuted }]}>{day.label}</Text>

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAppColor } from '@/hooks/useAppColor';
 import { MapView, Polyline, Marker, MapViewHandle } from '@/components/MapView';
 
@@ -90,6 +91,7 @@ export default function RoutesScreen() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const colors = useAppColor();
+  const { t } = useTranslation();
   const routeColors = [colors.accentPetrol, colors.trendUp, colors.trendDown];
 
   useEffect(() => {
@@ -159,13 +161,13 @@ export default function RoutesScreen() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setError('Location permission denied');
+        setError(t('routes.permissionDenied'));
         return;
       }
       const loc = await Location.getCurrentPositionAsync({});
       const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
       setGpsCoords(coords);
-      setOrigin('My Location');
+      setOrigin(t('routes.myLocation'));
       setOriginCoords(coords);
       mapRef.current?.animateToRegion?.({
         latitude: coords.lat,
@@ -174,7 +176,7 @@ export default function RoutesScreen() {
         longitudeDelta: 0.1,
       }, 500);
     } catch {
-      setError('Could not get GPS location');
+      setError(t('routes.gpsError'));
     } finally {
       setGpsLoading(false);
     }
@@ -182,7 +184,7 @@ export default function RoutesScreen() {
 
   const planRoute = useCallback(async () => {
     if (!originCoords || !destCoords) {
-      setError('Please select locations from the suggestions');
+      setError(t('routes.selectLocations'));
       return;
     }
     setLoading(true);
@@ -227,7 +229,7 @@ export default function RoutesScreen() {
       }
     } catch (err: any) {
       if (err.status === 401) { router.replace('/login'); return; }
-      setError(err.detail || 'Failed to plan route');
+      setError(err.detail || t('routes.routeError'));
     } finally {
       setLoading(false);
     }
@@ -254,8 +256,8 @@ export default function RoutesScreen() {
   }, [originCoords, destCoords]);
 
   const displayPoints = [];
-  if (gpsCoords) displayPoints.push({ coordinate: { latitude: gpsCoords.lat, longitude: gpsCoords.lng }, title: 'You are here', color: colors.accentPetrol });
-  if (originCoords && origin !== 'My Location') displayPoints.push({ coordinate: { latitude: originCoords.lat, longitude: originCoords.lng }, title: origin, color: colors.trendDown });
+  if (gpsCoords) displayPoints.push({ coordinate: { latitude: gpsCoords.lat, longitude: gpsCoords.lng }, title: t('routes.youAreHere'), color: colors.accentPetrol });
+  if (originCoords && origin !== t('routes.myLocation')) displayPoints.push({ coordinate: { latitude: originCoords.lat, longitude: originCoords.lng }, title: origin, color: colors.trendDown });
   if (destCoords) displayPoints.push({ coordinate: { latitude: destCoords.lat, longitude: destCoords.lng }, title: destination, color: colors.trendUp });
 
   return (
@@ -263,7 +265,7 @@ export default function RoutesScreen() {
       <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <View style={styles.headerLeft}>
           <Ionicons name="map-outline" size={22} color={colors.accentPetrol} />
-          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>Routes</Text>
+          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>{t('routes.header')}</Text>
         </View>
         <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
           <Ionicons name="person-outline" size={22} color={colors.textMuted} />
@@ -275,7 +277,7 @@ export default function RoutesScreen() {
           <View style={styles.inputWrapper}>
             <TextInput
               style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.bg, borderColor: colors.borderInput }]}
-              placeholder="From (e.g. Port Louis)"
+              placeholder={t('routes.fromPlaceholder')}
               placeholderTextColor={colors.textMuted}
               value={origin}
               onChangeText={onOriginChange}
@@ -293,7 +295,7 @@ export default function RoutesScreen() {
         <View style={[styles.inputWrapper, { marginTop: 4 }]}>
           <TextInput
             style={[styles.input, { color: colors.textPrimary, backgroundColor: colors.bg, borderColor: colors.borderInput }]}
-            placeholder="To (e.g. Curepipe)"
+            placeholder={t('routes.toPlaceholder')}
             placeholderTextColor={colors.textMuted}
             value={destination}
             onChangeText={onDestChange}
@@ -325,20 +327,20 @@ export default function RoutesScreen() {
             style={[styles.fuelBtn, { backgroundColor: colors.bg, borderColor: colors.borderInput }, selectedFuel === 'petrol' && { borderColor: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}
             onPress={() => setSelectedFuel('petrol')}
           >
-            <Text style={[styles.fuelBtnText, { color: selectedFuel === 'petrol' ? colors.accentPetrol : colors.textMuted }]}>Petrol</Text>
+            <Text style={[styles.fuelBtnText, { color: selectedFuel === 'petrol' ? colors.accentPetrol : colors.textMuted }]}>{t('routes.petrol')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.fuelBtn, { backgroundColor: colors.bg, borderColor: colors.borderInput }, selectedFuel === 'diesel' && { borderColor: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}
             onPress={() => setSelectedFuel('diesel')}
           >
-            <Text style={[styles.fuelBtnText, { color: selectedFuel === 'diesel' ? colors.accentPetrol : colors.textMuted }]}>Diesel</Text>
+            <Text style={[styles.fuelBtnText, { color: selectedFuel === 'diesel' ? colors.accentPetrol : colors.textMuted }]}>{t('routes.diesel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.planBtn, { backgroundColor: colors.accentPetrol }, (!originCoords || !destCoords || loading) && styles.buttonDisabled]}
             onPress={planRoute}
             disabled={!originCoords || !destCoords || loading}
           >
-            {loading ? <ActivityIndicator size="small" color={colors.textWhite} /> : <Text style={[styles.planBtnText, { color: colors.textWhite }]}>Plan</Text>}
+            {loading ? <ActivityIndicator size="small" color={colors.textWhite} /> : <Text style={[styles.planBtnText, { color: colors.textWhite }]}>{t('routes.plan')}</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -374,14 +376,14 @@ export default function RoutesScreen() {
               key={`gs-${s.id}`}
               coordinate={{ latitude: s.lat, longitude: s.lng }}
               title={s.name}
-              description={`${s.brand} · ${s.distance_km.toFixed(1)} km`}
+               description={t('routes.stationInfo', { brand: s.brand, distance: s.distance_km.toFixed(1) })}
               pinColor={colors.accentPetrol}
             />
           ))}
         </MapView>
         {routes.length > 0 && (
           <TouchableOpacity style={[styles.fitBtn, { backgroundColor: colors.bgCard, borderColor: colors.border, shadowColor: colors.shadow }]} onPress={fitMapToRoutes}>
-            <Text style={[styles.fitBtnText, { color: colors.accentPetrol }]}>⊞ Fit</Text>
+            <Text style={[styles.fitBtnText, { color: colors.accentPetrol }]}>{t('routes.fitMap')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -392,7 +394,7 @@ export default function RoutesScreen() {
             <View key={i} style={[styles.routeCard, { backgroundColor: colors.bgCard, borderColor: colors.border, shadowColor: colors.shadow }, i === 0 && styles.routeCardBest, i === 0 && { borderColor: colors.accentPetrol }]}>
               <View style={styles.routeCardHeader}>
                 <Text style={[styles.routeRank, { color: colors.textPrimary }]}>#{route.rank}</Text>
-                {i === 0 && <Text style={[styles.bestBadge, { color: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}><Ionicons name="star" size={14} color={colors.accentPetrol} /> Best</Text>}
+                {i === 0 && <Text style={[styles.bestBadge, { color: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}><Ionicons name="star" size={14} color={colors.accentPetrol} /> {t('routes.best')}</Text>}
                   <Text style={[styles.routeScore, { color: route.ai_score > 70 ? colors.trendDown : route.ai_score > 50 ? colors.trendStable : colors.trendUp }]}>
                     {route.ai_score}%
                   </Text>
@@ -400,20 +402,20 @@ export default function RoutesScreen() {
               <Text style={[styles.routeRecommendation, { color: colors.textMuted }]}>{route.recommendation}</Text>
               <View style={styles.routeStats}>
                 <Ionicons name="resize-outline" size={18} color={colors.textSecondary} />
-                <Text style={[styles.routeStat, { color: colors.textSecondary }]}>{route.distance_km} km</Text>
+                <Text style={[styles.routeStat, { color: colors.textSecondary }]}>{t('routes.km', { value: route.distance_km })}</Text>
                 <Ionicons name="car-outline" size={18} color={colors.textSecondary} />
-                <Text style={[styles.routeStat, { color: colors.textSecondary }]}>{Math.round(route.duration_min + route.traffic_delay_min)} min</Text>
+                <Text style={[styles.routeStat, { color: colors.textSecondary }]}>{t('routes.min', { value: Math.round(route.duration_min + route.traffic_delay_min) })}</Text>
                 <Ionicons name="flame-outline" size={18} color={colors.textSecondary} />
-                <Text style={[styles.routeStat, { color: colors.textSecondary }]}>${route.fuel_cost_usd.toFixed(2)}</Text>
+                <Text style={[styles.routeStat, { color: colors.textSecondary }]}>{t('routes.fuelCost', { value: route.fuel_cost_usd.toFixed(2) })}</Text>
               </View>
               {route.traffic_delay_min > 0 && (
                 <Text style={[styles.trafficText, { color: route.congestion === 'heavy' ? colors.trendUp : colors.trendStable }]}>
-                  <Ionicons name="car-outline" size={18} color={colors.textSecondary} /> +{route.traffic_delay_min} min delay ({route.congestion})
+                  <Ionicons name="car-outline" size={18} color={colors.textSecondary} /> {t('routes.trafficDelay', { delay: route.traffic_delay_min, congestion: route.congestion })}
                 </Text>
               )}
               {route.gas_stations.length > 0 && (
                 <Text style={[styles.gasText, { color: colors.accentPetrol }]}>
-                  <Ionicons name="flame-outline" size={16} color={colors.accentPetrol} /> {route.gas_stations.length} station{route.gas_stations.length > 1 ? 's' : ''} nearby
+                  <Ionicons name="flame-outline" size={16} color={colors.accentPetrol} /> {t('routes.stationsNearby', { count: route.gas_stations.length })}
                 </Text>
               )}
             </View>
@@ -435,7 +437,7 @@ const styles = StyleSheet.create({
   profileBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   inputCard: {
     borderRadius: 12, borderWidth: 1,
-    marginHorizontal: 12, padding: 16, gap: 12, marginBottom: 8,
+    marginHorizontal: 15, padding: 12, gap: 12, marginBottom: 8
   },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   inputWrapper: { flex: 1, position: 'relative' },
