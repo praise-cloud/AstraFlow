@@ -169,6 +169,10 @@
     "emailPlaceholder": "nom@entreprise.com",
     "passwordLabel": "MOT DE PASSE",
     "passwordPlaceholder": "Min. 8 caractères",
+    "fuelTypeLabel": "TYPE DE CARBURANT",
+    "petrol": "Essence",
+    "diesel": "Diesel",
+    "both": "Essence & Diesel",
     "businessTypeLabel": "TYPE D'ENTREPRISE",
     "businessRestaurant": "Restaurant",
     "businessTaxi": "Chauffeur de Taxi",
@@ -194,6 +198,11 @@
     "slide2_desc": "Des prévisions basées sur l'IA vous aident à prendre des décisions éclairées. Sachez quand les prix vont monter ou baisser et planifiez vos achats.",
     "slide3_title": "Prêt à Commencer ?",
     "slide3_desc": "Rejoignez des milliers d'utilisateurs qui optimisent leurs dépenses carburant. Obtenez des conseils personnalisés et maîtrisez vos coûts dès aujourd'hui."
+  },
+  "welcome": {
+    "cta": "Gérez vos coûts de carburant plus intelligemment grâce à des informations en temps réel.",
+    "createAccount": "Créer un Compte",
+    "returning": "Déjà inscrit"
   },
   "splash": {
     "title": "AstraFlow",

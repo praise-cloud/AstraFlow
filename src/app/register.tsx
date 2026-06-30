@@ -9,12 +9,19 @@ import { api } from '@/services/api';
 import { setToken, setUser } from '@/services/auth';
 import { useAppColor } from '@/hooks/useAppColor';
 
+const FUEL_TYPES = [
+  { id: 'petrol', icon: 'car-sport-outline' },
+  { id: 'diesel', icon: 'car-outline' },
+  { id: 'both', icon: 'swap-horizontal-outline' },
+];
+
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [businessType, setBusinessType] = useState('');
+  const [fuelType, setFuelType] = useState('');
   const [loading, setLoading] = useState(false);
 
   const colors = useAppColor();
@@ -29,7 +36,7 @@ export default function RegisterScreen() {
   ];
 
   const handleRegister = async () => {
-    if (!fullName || !email || !password || !businessType) {
+    if (!fullName || !email || !password || !businessType || !fuelType) {
       Alert.alert('Error', t('register.fillAllFields'));
       return;
     }
@@ -40,6 +47,7 @@ export default function RegisterScreen() {
         password,
         full_name: fullName,
         business_type: businessType,
+        fuel_type: fuelType,
       });
       await Promise.all([setToken(res.token), setUser(res.user)]);
       router.replace('/');
@@ -109,6 +117,33 @@ export default function RegisterScreen() {
                 >
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
                 </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('register.fuelTypeLabel')}</Text>
+              <View style={styles.businessGrid}>
+                {FUEL_TYPES.map((ft) => (
+                  <TouchableOpacity
+                    key={ft.id}
+                    style={[
+                      styles.businessChip,
+                      { borderColor: fuelType === ft.id ? colors.accentPetrol : colors.borderInput, backgroundColor: fuelType === ft.id ? colors.bgPrimaryLight : colors.bgSurface },
+                    ]}
+                    onPress={() => setFuelType(ft.id)}
+                  >
+                    <Ionicons name={ft.icon as any} size={24} color={fuelType === ft.id ? colors.accentPetrol : colors.textMuted} />
+                    <Text
+                      style={[
+                        styles.businessLabel,
+                        fuelType === ft.id && styles.businessLabelSelected,
+                        { color: fuelType === ft.id ? colors.accentPetrol : colors.textSecondary },
+                      ]}
+                    >
+                      {t(`register.${ft.id}`)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
 

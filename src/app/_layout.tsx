@@ -25,13 +25,13 @@ function useProtectedRoute() {
       await restoreAuth();
       const authenticated = await Promise.resolve(isAuthenticated());
       const onboardingDone = await isOnboardingCompleted();
-      const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
+      const inAuthGroup = segments[0] === 'login' || segments[0] === 'register' || segments[0] === 'welcome';
       const inOnboarding = segments[0] === 'onboarding';
 
       if (!authenticated && !inAuthGroup && !inOnboarding && !onboardingDone) {
         router.replace('/onboarding');
       } else if (!authenticated && !inAuthGroup && onboardingDone) {
-        router.replace('/login');
+        router.replace('/welcome');
       } else if (authenticated && (inAuthGroup || inOnboarding)) {
         router.replace('/');
       }
@@ -91,6 +91,7 @@ function RootLayoutInner() {
     <GluestackUIProvider config={azureClarityConfig}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="onboarding" />
+        <Stack.Screen name="welcome" />
         <Stack.Screen name="login" />
         <Stack.Screen name="register" />
         <Stack.Screen name="(tabs)" />

@@ -84,7 +84,7 @@ async function clearTokenNative(): Promise<void> {
   ]);
 }
 
-async function getUserNative(): Promise<{ id: string; email: string; full_name: string; business_type: string } | null> {
+async function getUserNative(): Promise<{ id: string; email: string; full_name: string; business_type: string; fuel_type: string; avatar_url: string | null } | null> {
   return secureStoreGet(USER_KEY).then(raw => {
     if (!raw) return null;
     try { return JSON.parse(raw); } catch { return null; }
@@ -124,7 +124,16 @@ export async function clearToken(): Promise<void> {
   }
 }
 
-export function getUser(): { id: string; email: string; full_name: string; business_type: string } | null {
+export type UserData = {
+  id: string;
+  email: string;
+  full_name: string;
+  business_type: string;
+  fuel_type: string;
+  avatar_url: string | null;
+};
+
+export function getUser(): UserData | null {
   if (isWeb()) return lsGetObject(USER_KEY);
   return _inMemoryUser as any;
 }
@@ -162,7 +171,7 @@ export async function getTokenAsync(): Promise<string | null> {
   return getTokenNative();
 }
 
-export async function getUserAsync(): Promise<{ id: string; email: string; full_name: string; business_type: string } | null> {
+export async function getUserAsync(): Promise<UserData | null> {
   if (isWeb()) return Promise.resolve(lsGetObject(USER_KEY));
   if (_inMemoryUser) return _inMemoryUser as any;
   return getUserNative();

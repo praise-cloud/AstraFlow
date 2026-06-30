@@ -203,6 +203,8 @@ def get_dashboard(user: User = Depends(get_current_user), db: Session = Depends(
         },
         "market_update": market_update,
         "business_type": user.business_type.value,
+        "fuel_type": user.fuel_type,
+        "avatar_url": user.avatar_url,
         "user_name": user.full_name,
         "model": model_name,
         "evaluation": evaluation,

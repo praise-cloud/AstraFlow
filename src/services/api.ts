@@ -72,18 +72,50 @@ async function request<T = any>(
   return data;
 }
 
+export type UserResponse = {
+  id: string;
+  email: string;
+  full_name: string;
+  business_type: string;
+  fuel_type: string;
+  avatar_url: string | null;
+};
+
 export const api = {
   auth: {
-    register: (data: { email: string; password: string; full_name: string; business_type: string }) =>
-      request<{ token: string; user: { id: string; email: string; full_name: string; business_type: string } }>(
+    register: (data: { email: string; password: string; full_name: string; business_type: string; fuel_type?: string }) =>
+      request<{ token: string; user: UserResponse }>(
         '/auth/register',
         { method: 'POST', body: JSON.stringify(data) }
       ),
     login: (data: { email: string; password: string }) =>
-      request<{ token: string; user: { id: string; email: string; full_name: string; business_type: string } }>(
+      request<{ token: string; user: UserResponse }>(
         '/auth/login',
         { method: 'POST', body: JSON.stringify(data) }
       ),
+  },
+
+  profile: {
+    update: (data: { full_name?: string; business_type?: string; fuel_type?: string }) =>
+      request<UserResponse>('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    uploadAvatar: (fileUri: string) =>
+      request<{ avatar_url: string }>('/auth/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'multipart/form-data' },
+        body: (() => {
+          const form = new FormData();
+          form.append('file', {
+            uri: fileUri,
+            type: 'image/jpeg',
+            name: 'avatar.jpg',
+          } as any);
+          return form;
+        })(),
+      }),
   },
 
   dashboard: {
@@ -96,6 +128,8 @@ export const api = {
         recommendation: { title: string; content: string };
         market_update: string;
         business_type: string;
+        fuel_type: string;
+        avatar_url: string | null;
         user_name: string;
       }>('/dashboard'),
   },

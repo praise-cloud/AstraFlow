@@ -169,6 +169,10 @@
     "emailPlaceholder": "name@company.com",
     "passwordLabel": "PASSWORD",
     "passwordPlaceholder": "Min. 8 characters",
+    "fuelTypeLabel": "FUEL TYPE",
+    "petrol": "Petrol",
+    "diesel": "Diesel",
+    "both": "Petrol & Diesel",
     "businessTypeLabel": "BUSINESS TYPE",
     "businessRestaurant": "Restaurant",
     "businessTaxi": "Taxi Driver",
@@ -194,6 +198,11 @@
     "slide2_desc": "AI-powered forecasts help you make informed decisions. Know when prices will rise or fall and plan your fuel purchases accordingly.",
     "slide3_title": "Ready to Start?",
     "slide3_desc": "Join thousands of users making smarter fuel decisions. Get personalised insights and take control of your fuel expenses today."
+  },
+  "welcome": {
+    "cta": "Start managing your fuel costs smarter with real-time insights.",
+    "createAccount": "Create an Account",
+    "returning": "I've been here before"
   },
   "splash": {
     "title": "AstraFlow",

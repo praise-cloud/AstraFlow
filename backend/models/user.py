@@ -14,6 +14,12 @@ class BusinessType(str, enum.Enum):
     LOGISTICS = "logistics"
 
 
+class FuelType(str, enum.Enum):
+    PETROL = "petrol"
+    DIESEL = "diesel"
+    BOTH = "both"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -22,4 +28,6 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
     business_type = Column(SAEnum(BusinessType, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    fuel_type = Column(SAEnum(FuelType, values_callable=lambda x: [e.value for e in x]), default=FuelType.PETROL, nullable=False)
+    avatar_url = Column(String(512), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))

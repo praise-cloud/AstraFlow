@@ -68,12 +68,12 @@ export default function OnboardingScreen() {
 
   const handleGetStarted = async () => {
     await completeOnboarding();
-    router.replace('/login');
+    router.replace('/welcome');
   };
 
   const handleSkip = async () => {
     await completeOnboarding();
-    router.replace('/login');
+    router.replace('/welcome');
   };
 
   const renderSlide = ({ item }: { item: typeof slides[0] }) => (
