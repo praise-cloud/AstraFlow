@@ -1,5 +1,6 @@
+import logging
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import date as date_lib, datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from backend.db.database import get_db
@@ -11,32 +12,36 @@ from backend.services.scraper import fetch_retail_prices
 from backend.services.oil_price_api import fetch_global_prices
 from backend.ml.forecast import get_forecaster
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["dashboard"])
-
-_scraped = False
 
 
 def _ensure_prices_scraped(db: Session):
-    global _scraped
-    if _scraped:
+    last = db.query(FuelPrice).order_by(FuelPrice.date.desc()).first()
+    if last and last.date >= date_lib.today() - timedelta(days=7):
         return
-    existing = db.query(FuelPrice).count()
-    if existing > 10:
-        _scraped = True
+    logger.info("Dashboard: prices stale, scraping STC…")
+    fresh = fetch_retail_prices()
+    if not fresh:
+        logger.warning("Dashboard: STC scrape returned no data")
         return
-    prices = fetch_retail_prices()
-    for p in prices:
-        existing_record = (
-            db.query(FuelPrice)
-            .filter(FuelPrice.date == p["date"].date(), FuelPrice.fuel_type == "petrol")
-            .first()
-        )
-        if existing_record:
-            continue
-        db.add(FuelPrice(date=p["date"].date(), fuel_type="petrol", price=p["petrol"]))
-        db.add(FuelPrice(date=p["date"].date(), fuel_type="diesel", price=p["diesel"]))
+    stored = 0
+    for entry in fresh:
+        d = entry["date"].date() if hasattr(entry["date"], 'date') else entry["date"]
+        exists_petrol = db.query(FuelPrice).filter(
+            FuelPrice.date == d, FuelPrice.fuel_type == "petrol"
+        ).first()
+        exists_diesel = db.query(FuelPrice).filter(
+            FuelPrice.date == d, FuelPrice.fuel_type == "diesel"
+        ).first()
+        if not exists_petrol:
+            db.add(FuelPrice(date=d, fuel_type="petrol", price=entry["petrol"]))
+            stored += 1
+        if not exists_diesel:
+            db.add(FuelPrice(date=d, fuel_type="diesel", price=entry["diesel"]))
+            stored += 1
     db.commit()
-    _scraped = True
+    logger.info(f"Dashboard: stored {stored} new price records")
 
 
 def get_current_user(authorization: str = Header(...), db: Session = Depends(get_db)):

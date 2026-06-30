@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { azureClarityConfig } from '@/theme/azure-clarity';
 import { isAuthenticated, restoreAuth } from '@/services/auth';
 import { registerForPushNotifications } from '@/services/notifications';
+import { isOnboardingCompleted } from '@/services/onboarding';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useAppColor } from '@/hooks/useAppColor';
 import { readyPromise as i18nReady } from '@/i18n';
@@ -23,11 +24,15 @@ function useProtectedRoute() {
     const check = async () => {
       await restoreAuth();
       const authenticated = await Promise.resolve(isAuthenticated());
+      const onboardingDone = await isOnboardingCompleted();
       const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
+      const inOnboarding = segments[0] === 'onboarding';
 
-      if (!authenticated && !inAuthGroup) {
+      if (!authenticated && !inAuthGroup && !inOnboarding && !onboardingDone) {
+        router.replace('/onboarding');
+      } else if (!authenticated && !inAuthGroup && onboardingDone) {
         router.replace('/login');
-      } else if (authenticated && inAuthGroup) {
+      } else if (authenticated && (inAuthGroup || inOnboarding)) {
         router.replace('/');
       }
       if (authenticated) {
@@ -85,6 +90,7 @@ function RootLayoutInner() {
   return (
     <GluestackUIProvider config={azureClarityConfig}>
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="onboarding" />
         <Stack.Screen name="login" />
         <Stack.Screen name="register" />
         <Stack.Screen name="(tabs)" />

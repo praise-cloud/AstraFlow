@@ -44,6 +44,7 @@
     "businessImpact": "Impact Commercial",
     "newsSection": "Marché Pétrolier — Maurice",
     "noNews": "Aucun article disponible",
+    "readArticle": "Lire l'article",
     "logRefill": "Enregistrer un Plein",
     "litersRefilled": "Litres ajoutés",
     "refillPlaceholder": "ex. 45",
@@ -182,6 +183,17 @@
     "logIn": "Se Connecter",
     "fillAllFields": "Veuillez remplir tous les champs",
     "registrationFailed": "Échec de l'Inscription"
+  },
+  "onboarding": {
+    "skip": "Passer",
+    "next": "Suivant",
+    "getStarted": "Commencer",
+    "slide1_title": "Bienvenue sur AstraFlow",
+    "slide1_desc": "Votre plateforme intelligente d'informations sur le carburant. Suivez les prix en temps réel, prévoyez les tendances et optimisez vos coûts grâce à l'IA.",
+    "slide2_title": "Prédictions Intelligentes",
+    "slide2_desc": "Des prévisions basées sur l'IA vous aident à prendre des décisions éclairées. Sachez quand les prix vont monter ou baisser et planifiez vos achats.",
+    "slide3_title": "Prêt à Commencer ?",
+    "slide3_desc": "Rejoignez des milliers d'utilisateurs qui optimisent leurs dépenses carburant. Obtenez des conseils personnalisés et maîtrisez vos coûts dès aujourd'hui."
   },
   "splash": {
     "title": "AstraFlow",

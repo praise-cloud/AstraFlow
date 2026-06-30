@@ -260,6 +260,7 @@ export const api = {
         title: string;
         summary: string;
         content: string;
+        url: string | null;
         source: string;
         image_url: string | null;
         published_at: string;

@@ -44,6 +44,7 @@
     "businessImpact": "Business Impact",
     "newsSection": "Oil & Fuel Market — Mauritius",
     "noNews": "No news articles available",
+    "readArticle": "Read Full Article",
     "logRefill": "Log Refill",
     "litersRefilled": "Liters refilled",
     "refillPlaceholder": "e.g. 45",
@@ -182,6 +183,17 @@
     "logIn": "Log in",
     "fillAllFields": "Please fill in all fields",
     "registrationFailed": "Registration Failed"
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get Started",
+    "slide1_title": "Welcome to AstraFlow",
+    "slide1_desc": "Your intelligent fuel insights platform. Track real-time prices, predict trends, and optimise your fuel costs with AI-driven analytics.",
+    "slide2_title": "Smart Predictions",
+    "slide2_desc": "AI-powered forecasts help you make informed decisions. Know when prices will rise or fall and plan your fuel purchases accordingly.",
+    "slide3_title": "Ready to Start?",
+    "slide3_desc": "Join thousands of users making smarter fuel decisions. Get personalised insights and take control of your fuel expenses today."
   },
   "splash": {
     "title": "AstraFlow",

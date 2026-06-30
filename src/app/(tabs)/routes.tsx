@@ -264,8 +264,7 @@ export default function RoutesScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <View style={styles.headerLeft}>
-          <Ionicons name="map-outline" size={22} color={colors.accentPetrol} />
-          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>{t('routes.header')}</Text>
+          
         </View>
         <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
           <Ionicons name="person-outline" size={22} color={colors.textMuted} />

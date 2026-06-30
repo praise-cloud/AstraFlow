@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons} from '@expo/vector-icons';
 
 import { useTranslation } from 'react-i18next';
 import { useAppColor } from '@/hooks/useAppColor';
@@ -62,7 +62,10 @@ export default function PricesScreen() {
   const fetchHistory = useCallback(async (days: number) => {
     setError(null);
     try {
-      const res = await api.prices.history(days);
+      let res = await api.prices.history(days);
+      if (res.length === 0) {
+        res = makeMockData(days);
+      }
       setHistory(res);
     } catch (err: any) {
       if (err.status === 401) {
@@ -79,7 +82,10 @@ export default function PricesScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const res = await api.prices.history(selectedDays);
+      let res = await api.prices.history(selectedDays);
+      if (res.length === 0) {
+        res = makeMockData(selectedDays);
+      }
       setHistory(res);
     } catch { /* ignore */ }
     setRefreshing(false);
@@ -146,7 +152,7 @@ export default function PricesScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <View style={styles.headerLeft}>
-          <MaterialCommunityIcons name="gas-station-outline" size={22} color={colors.accentPetrol} />
+          <Ionicons name="cash-outline" size={22} color={colors.accentPetrol} />
           <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>{t('prices.header')}</Text>
         </View>
         <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>

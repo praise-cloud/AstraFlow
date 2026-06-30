@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, Modal, TextInput, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -35,6 +35,7 @@ type OilNews = {
   title: string;
   summary: string;
   content: string;
+  url: string | null;
   source: string;
   image_url: string | null;
   published_at: string;
@@ -474,6 +475,15 @@ export default function HomeScreen() {
               <Text style={[styles.newsDetailDate, { color: colors.textMuted }]}>{selectedNews?.published_at}</Text>
               <View style={[styles.modalDivider, { backgroundColor: colors.bgSurface }]} />
               <Text style={[styles.newsDetailContent, { color: colors.textPrimary }]}>{selectedNews?.content}</Text>
+              {selectedNews?.url ? (
+                <TouchableOpacity
+                  style={[styles.readArticleBtn, { backgroundColor: colors.accentPetrol }]}
+                  onPress={() => Linking.openURL(selectedNews.url!)}
+                >
+                  <Ionicons name="open-outline" size={16} color={colors.textWhite} />
+                  <Text style={[styles.readArticleBtnText, { color: colors.textWhite }]}>{t('home.readArticle')}</Text>
+                </TouchableOpacity>
+              ) : null}
             </ScrollView>
           </View>
         </View>
@@ -636,4 +646,9 @@ const styles = StyleSheet.create({
   newsDetailTitle: { fontSize: 20, fontWeight: '700', lineHeight: 26, marginBottom: 8 },
   newsDetailDate: { fontSize: 12, marginBottom: 12 },
   newsDetailContent: { fontSize: 15, lineHeight: 24 },
+  readArticleBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 12, borderRadius: 8, marginTop: 20,
+  },
+  readArticleBtnText: { fontSize: 15, fontWeight: '600' },
 });

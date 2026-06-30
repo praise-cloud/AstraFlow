@@ -1,3 +1,4 @@
+import html
 import re
 from datetime import date
 from xml.etree import ElementTree
@@ -7,6 +8,22 @@ GOOGLE_NEWS_RSS = (
     "https://news.google.com/rss/search?"
     "q=oil+prices+petrol+diesel+Mauritius&hl=en-MU&gl=MU&ceid=MU:en"
 )
+
+MAURITIUS_RSS_FEEDS = [
+    ("News Moris", "https://newsmoris.com/feed/"),
+    ("Scoop MU", "https://www.scoop.mu/feed/"),
+]
+
+RELEVANT_KEYWORDS = [
+    'petrol', 'diesel', 'fuel oil', 'crude', 'gasoline', 'petroleum',
+    'stc', 'ceb', 'energy', 'electricity', 'power', 'tanker',
+    'oil price', 'fuel price', 'gaz', 'hydrocarbon', 'shipping',
+    'import', 'supply', 'refinery', 'barrel',
+]
+
+TIMEOUT = 15
+
+CONTENT_NS = 'http://purl.org/rss/1.0/modules/content/'
 
 FALLBACK_ARTICLES = [
     {
@@ -21,6 +38,7 @@ FALLBACK_ARTICLES = [
             "and diesel to remain in effect until the next review cycle."
         ),
         "source": "STC Mauritius",
+        "url": None,
         "published_at": date.today(),
     },
     {
@@ -35,6 +53,7 @@ FALLBACK_ARTICLES = [
             "continues."
         ),
         "source": "Reuters",
+        "url": None,
         "published_at": date.today(),
     },
     {
@@ -48,6 +67,7 @@ FALLBACK_ARTICLES = [
             "and driver training programmes can yield substantial fuel cost reductions over time."
         ),
         "source": "AstraFlow Insights",
+        "url": None,
         "published_at": date.today(),
     },
     {
@@ -62,6 +82,7 @@ FALLBACK_ARTICLES = [
             "increased transparency in the pricing process."
         ),
         "source": "STC Mauritius",
+        "url": None,
         "published_at": date.today(),
     },
     {
@@ -76,45 +97,105 @@ FALLBACK_ARTICLES = [
             "feeling the impact as fuel represents a significant portion of their operational costs."
         ),
         "source": "Business Magazine Mauritius",
+        "url": None,
         "published_at": date.today(),
     },
 ]
 
 
-def fetch_news() -> list[dict]:
-    """Fetch oil/fuel news from Google News RSS. Falls back to hardcoded articles."""
+def _is_relevant(title: str, content: str) -> bool:
+    text = f"{title} {content}".lower()
+    return any(kw in text for kw in RELEVANT_KEYWORDS)
+
+
+def _clean_text(raw: str) -> str:
+    stripped = re.sub(r'<[^>]+>', '', raw)
+    decoded = html.unescape(stripped)
+    no_shortcodes = re.sub(r'\[/?[a-z_]+\s*[^\]]*\]', '', decoded)
+    return no_shortcodes.replace('\xa0', ' ').strip()
+
+
+def _strip_wp_footer(text: str) -> str:
+    return re.sub(
+        r'\n*The post\s+.*\s+appeared first on\s+.*',
+        '', text, flags=re.IGNORECASE | re.DOTALL
+    ).strip()
+
+
+def _parse_rss_articles(source_name: str, feed_url: str, filter_relevant: bool = False) -> list[dict]:
     try:
-        resp = httpx.get(GOOGLE_NEWS_RSS, timeout=10, follow_redirects=True)
+        resp = httpx.get(feed_url, timeout=TIMEOUT, follow_redirects=True,
+                         headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
         resp.raise_for_status()
         root = ElementTree.fromstring(resp.content)
         items = root.findall(".//item")
-        if not items:
-            return list(FALLBACK_ARTICLES)
-        articles = []
-        for item in items[:10]:
-            title = item.findtext("title", "").strip()
-            if not title:
-                continue
-            description = item.findtext("description", "").strip()
-            link = item.findtext("link", "")
-            source_elem = item.find("source")
-            source = source_elem.text if source_elem is not None else "Google News"
-            pub_date_str = item.findtext("pubDate", "")
-            pub_date = date.today()
-            if pub_date_str:
-                try:
-                    from datetime import datetime as dt
-                    pub_date = dt.strptime(pub_date_str[:25], "%a, %d %b %Y %H:%M:%S").date()
-                except ValueError:
-                    pass
-            clean_desc = re.sub(r'<[^>]+>', '', description).strip()
-            articles.append({
-                "title": title,
-                "summary": clean_desc[:200] if clean_desc else title,
-                "content": f"{clean_desc}\n\nRead more: {link}" if clean_desc else link,
-                "source": source,
-                "published_at": pub_date,
-            })
-        return articles if articles else list(FALLBACK_ARTICLES)
     except Exception:
-        return list(FALLBACK_ARTICLES)
+        return []
+
+    articles = []
+    for item in items:
+        title = item.findtext("title", "").strip()
+        if not title:
+            continue
+
+        link = item.findtext("link", "").strip()
+        description = item.findtext("description", "").strip()
+
+        content_encoded = item.find(f"{{{CONTENT_NS}}}encoded")
+        raw_content = (
+            content_encoded.text.strip()
+            if content_encoded is not None and content_encoded.text
+            else description
+        )
+        full_text = _strip_wp_footer(_clean_text(raw_content))
+
+        if filter_relevant and not _is_relevant(title, full_text):
+            continue
+
+        source_elem = item.find("source")
+        source = source_elem.text if source_elem is not None else source_name
+
+        pub_date_str = item.findtext("pubDate", "")
+        pub_date = date.today()
+        if pub_date_str:
+            try:
+                from datetime import datetime as dt
+                pub_date = dt.strptime(pub_date_str[:25], "%a, %d %b %Y %H:%M:%S").date()
+            except ValueError:
+                pass
+
+        summary = _clean_text(description)[:200] if description else title[:200]
+
+        articles.append({
+            "title": title,
+            "summary": summary,
+            "content": full_text,
+            "url": link,
+            "source": source,
+            "published_at": pub_date,
+        })
+    return articles
+
+
+def fetch_news() -> list[dict]:
+    all_articles = []
+
+    for source_name, feed_url in MAURITIUS_RSS_FEEDS:
+        try:
+            articles = _parse_rss_articles(source_name, feed_url)
+            all_articles.extend(articles)
+        except Exception:
+            continue
+
+    try:
+        google_articles = _parse_rss_articles("Google News", GOOGLE_NEWS_RSS, filter_relevant=True)
+        existing_urls = {a["url"] for a in all_articles if a["url"]}
+        for a in google_articles:
+            if a["url"] not in existing_urls:
+                all_articles.append(a)
+    except Exception:
+        pass
+
+    all_articles.sort(key=lambda a: a["published_at"], reverse=True)
+
+    return all_articles[:10] if all_articles else list(FALLBACK_ARTICLES)

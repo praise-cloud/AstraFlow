@@ -1,5 +1,10 @@
 import numpy as np
-from backend.ml.data import generate_training_data, prepare_features
+from backend.ml.data import (
+    generate_training_data,
+    prepare_features,
+    clean_data,
+    build_arima_series,
+)
 
 
 class TestGenerateTrainingData:
@@ -30,6 +35,58 @@ class TestGenerateTrainingData:
             assert d1["diesel"] == d2["diesel"]
 
 
+class TestCleanData:
+    def test_forward_fills_none_values(self):
+        data = [
+            {"date": "2026-01-01", "timestamp": 1, "petrol": 1.5, "diesel": 1.7},
+            {"date": "2026-01-02", "timestamp": 2, "petrol": None, "diesel": 1.8},
+            {"date": "2026-01-03", "timestamp": 3, "petrol": 1.6, "diesel": 1.9},
+        ]
+        cleaned = clean_data(data, "petrol")
+        date_02 = [d for d in cleaned if d["date"] == "2026-01-02"][0]
+        assert date_02["petrol"] == 1.5
+
+    def test_forward_fills_gaps(self):
+        data = [
+            {"date": "2026-01-01", "timestamp": 1, "petrol": 1.5, "diesel": 1.7},
+            {"date": "2026-01-03", "timestamp": 3, "petrol": 1.6, "diesel": 1.9},
+        ]
+        cleaned = clean_data(data, "petrol")
+        dates = [d["date"] for d in cleaned]
+        assert "2026-01-02" in dates
+        assert len(cleaned) == 3
+
+    def test_forward_filled_price_matches_previous(self):
+        data = [
+            {"date": "2026-01-01", "timestamp": 1, "petrol": 1.5, "diesel": 1.7},
+            {"date": "2026-01-03", "timestamp": 3, "petrol": 1.6, "diesel": 1.9},
+        ]
+        cleaned = clean_data(data, "petrol")
+        gap = [d for d in cleaned if d["date"] == "2026-01-02"][0]
+        assert gap["petrol"] == 1.5
+
+    def test_removes_outliers(self):
+        data = [
+            {"date": f"2026-01-{i:02d}", "timestamp": float(i),
+             "petrol": 100.0 if i == 5 else 1.6, "diesel": 1.7}
+            for i in range(1, 11)
+        ]
+        cleaned = clean_data(data, "petrol")
+        petrols = [d["petrol"] for d in cleaned]
+        assert all(p < 50 for p in petrols)
+
+    def test_empty_input_returns_empty(self):
+        assert clean_data([], "petrol") == []
+
+    def test_sorts_chronologically(self):
+        data = [
+            {"date": "2026-01-03", "timestamp": 3, "petrol": 1.6, "diesel": 1.9},
+            {"date": "2026-01-01", "timestamp": 1, "petrol": 1.5, "diesel": 1.7},
+        ]
+        cleaned = clean_data(data, "petrol")
+        assert cleaned[0]["date"] == "2026-01-01"
+
+
 class TestPrepareFeatures:
     def test_returns_correct_shapes(self):
         data = generate_training_data(days=50, seed_val=42)
@@ -55,3 +112,18 @@ class TestPrepareFeatures:
         X_p, y_p, _ = prepare_features(data, "petrol")
         X_d, y_d, _ = prepare_features(data, "diesel")
         assert not np.array_equal(y_p, y_d)
+
+
+class TestBuildArimaSeries:
+    def test_returns_1d_array(self):
+        data = generate_training_data(days=10, seed_val=42)
+        series = build_arima_series(data, "petrol")
+        assert isinstance(series, np.ndarray)
+        assert series.ndim == 1
+        assert len(series) == 10
+
+    def test_values_match_original(self):
+        data = generate_training_data(days=10, seed_val=42)
+        series = build_arima_series(data, "petrol")
+        for i, d in enumerate(data):
+            assert series[i] == d["petrol"]

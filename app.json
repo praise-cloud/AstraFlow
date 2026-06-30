@@ -14,6 +14,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.astraflow.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,11 +39,19 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "97796201-6070-49fa-b442-c4e89be6b2a7"
+      }
+    },
+    "owner": "praise.stealth"
   }
 }

@@ -53,3 +53,9 @@ example
 /ios
 /android
 /ui_sample
+
+# project artifacts
+*.db
+*.docx
+supabase/
+.opencode/
