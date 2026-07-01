@@ -38,12 +38,25 @@ async function request<T = any>(
   }
 
   let res: Response;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    res = await fetch(url, { ...options, headers, signal: controller.signal });
-    clearTimeout(timeout);
-  } catch {
+  let lastErr: Error | null = null;
+  let timeout: ReturnType<typeof setTimeout>;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const controller = new AbortController();
+      timeout = setTimeout(() => controller.abort(), 60000);
+      res = await fetch(url, { ...options, headers, signal: controller.signal });
+      clearTimeout(timeout);
+      lastErr = null;
+      break;
+    } catch (err) {
+      clearTimeout(timeout);
+      lastErr = err instanceof Error ? err : new Error('Unknown error');
+      if (attempt === 0) {
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+  }
+  if (lastErr) {
     if (isRead) {
       const cached = getCache<T>(path, Infinity);
       if (cached) return cached;
