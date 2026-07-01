@@ -5,7 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { api } from '@/services/api';
+import { api, avatarUrl } from '@/services/api';
 import { getUser } from '@/services/auth';
 import { useAppColor } from '@/hooks/useAppColor';
 import { getCurrentLanguage } from '@/i18n';
@@ -134,7 +134,7 @@ export default function HomeScreen() {
         </View>
         <AnimatedPressable style={styles.profileBtn} onPress={() => router.push('/profile')} scaleTo={0.9}>
           {user?.avatar_url ? (
-            <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
+            <Image source={{ uri: avatarUrl(user.avatar_url) ?? undefined }} style={styles.avatarImage} />
           ) : (
             <View style={[styles.avatarPlaceholder, { backgroundColor: colors.accentPetrol }]}>
               <Text style={[styles.avatarLetter, { color: colors.textWhite }]}>

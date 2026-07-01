@@ -3,6 +3,14 @@ import { setCache, getCache, removeCache } from './cache';
 
 const API_BASE = 'https://astraflow-api-dryi.onrender.com/api';
 
+const API_ROOT = API_BASE.replace(/\/api\/?$/, '');
+
+export function avatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('/')) return `${API_ROOT}${url}`;
+  return url;
+}
+
 export class ApiError extends Error {
   status: number;
   detail: string;
@@ -120,7 +128,7 @@ export const api = {
       }),
 
     deleteAvatar: () =>
-      request<{ avatar_url: null }>('/auth/avatar', { method: 'DELETE' }),
+      request<UserResponse>('/auth/avatar', { method: 'DELETE' }),
 
     uploadAvatar: (fileUri: string) =>
       request<{ avatar_url: string }>('/auth/avatar', {
