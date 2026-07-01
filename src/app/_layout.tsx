@@ -22,6 +22,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import { useAppColor } from '@/hooks/useAppColor';
 import { readyPromise as i18nReady } from '@/i18n';
 import { PulsingDot } from '@/components/animations/PulsingDot';
+import { GlowEffect } from '@/components/animations/GlowEffect';
 
 function useProtectedRoute() {
   const segments = useSegments();
@@ -78,9 +79,11 @@ function RootLayoutInner() {
       <GluestackUIProvider config={azureClarityConfig}>
         <View style={[styles.splashContainer, { backgroundColor: colors.bg }]}>
           <Animated.View entering={BounceIn.duration(800).springify()}>
-            <View style={[styles.logo, { backgroundColor: colors.bgPrimary }]}>
-              <MaterialCommunityIcons name="gas-station" size={80} color={colors.accentPetrol} />
-            </View>
+            <GlowEffect variant="primary" size={6} duration={2500}>
+              <View style={[styles.logo, { backgroundColor: colors.bgPrimary }]}>
+                <MaterialCommunityIcons name="gas-station" size={80} color={colors.accentPetrol} />
+              </View>
+            </GlowEffect>
           </Animated.View>
 
           <Animated.Text

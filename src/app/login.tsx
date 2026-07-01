@@ -10,6 +10,7 @@ import { api } from '@/services/api';
 import { setToken, setUser } from '@/services/auth';
 import { AnimatedPressable } from '@/components/animations/AnimatedPressable';
 import { SlideInView } from '@/components/animations/SlideInView';
+import { GlowEffect } from '@/components/animations/GlowEffect';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -50,9 +51,11 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <SlideInView direction="up" duration={500}>
             <View style={styles.brandSection}>
-              <View style={[styles.logo, { backgroundColor: colors.accentPetrol }]}>
-                <MaterialCommunityIcons name="gas-station-outline" size={48} color={colors.textWhite} />
-              </View>
+              <GlowEffect variant="primary" size={5} duration={2500}>
+                <View style={[styles.logo, { backgroundColor: colors.accentPetrol }]}>
+                  <MaterialCommunityIcons name="gas-station-outline" size={48} color={colors.textWhite} />
+                </View>
+              </GlowEffect>
               <Text style={[styles.brandName, { color: colors.accentPetrol }]}>{t('common.appName')}</Text>
               <Text style={[styles.tagline, { color: colors.textSecondary }]}>
                 {t('login.tagline')}
@@ -104,6 +107,8 @@ export default function LoginScreen() {
                 onPress={handleLogin}
                 disabled={loading}
                 scaleTo={0.97}
+                haptic="medium"
+                sound="tap"
               >
                 {loading ? (
                   <ActivityIndicator size="small" color={colors.textWhite} />

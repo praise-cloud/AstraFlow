@@ -15,6 +15,8 @@ import { AnimatedBar } from '@/components/animations/AnimatedBar';
 import { StaggerContainer } from '@/components/animations/StaggerContainer';
 import { SlideInView } from '@/components/animations/SlideInView';
 import { Shimmer } from '@/components/animations/Shimmer';
+import { ColorPopView } from '@/components/animations/ColorPopView';
+import { GlowEffect } from '@/components/animations/GlowEffect';
 
 type DashboardData = {
   current_price: { petrol: number; diesel: number; currency: string; unit: string };
@@ -194,6 +196,8 @@ export default function HomeScreen() {
                 style={[styles.errorBanner, { backgroundColor: colors.bgError }]}
                 onPress={fetchDashboard}
                 scaleTo={0.98}
+                haptic="light"
+                sound="tap"
               >
                 <Text style={[styles.errorText, { color: colors.textError }]}>{error}</Text>
                 <Text style={[styles.retryText, { color: colors.textError }]}>{t('common.retry')}</Text>
@@ -202,14 +206,16 @@ export default function HomeScreen() {
 
             <StaggerContainer staggerDelay={100} direction="up" duration={350}>
               <SlideInView direction="up" duration={400}>
-                <View style={[styles.bannerCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
-                  <View style={[styles.bannerAccent, { backgroundColor: colors.accentPetrol }]} />
-                  <View style={styles.bannerContent}>
-                    <Text style={[styles.bannerLabel, { color: colors.accentPetrol }]}>{t('home.recommendation')}</Text>
-                    <Text style={[styles.bannerTitle, { color: colors.textPrimary }]}>{data.recommendation.title}</Text>
-                    <Text style={[styles.bannerText, { color: colors.textSecondary }]}>{data.recommendation.content}</Text>
+                <ColorPopView variant="primary" position="left" thickness={5}>
+                  <View style={[styles.bannerCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
+                    <View style={[styles.bannerAccent, { backgroundColor: colors.accentPetrol }]} />
+                    <View style={styles.bannerContent}>
+                      <Text style={[styles.bannerLabel, { color: colors.accentPetrol }]}>{t('home.recommendation')}</Text>
+                      <Text style={[styles.bannerTitle, { color: colors.textPrimary }]}>{data.recommendation.title}</Text>
+                      <Text style={[styles.bannerText, { color: colors.textSecondary }]}>{data.recommendation.content}</Text>
+                    </View>
                   </View>
-                </View>
+                </ColorPopView>
               </SlideInView>
 
               <SlideInView direction="up" duration={400} delay={100}>
@@ -319,36 +325,48 @@ export default function HomeScreen() {
 
               <SlideInView direction="up" duration={400} delay={300}>
                 <View style={styles.metricsRow}>
-                  <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                    <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.fuelRisk')}</Text>
-                    <AnimatedBar
-                      percentage={riskPct}
-                      color={(colors as any)[`risk${data.risk_level}`] || colors.riskModerate}
-                      trackColor={colors.barTrack}
-                      height={6}
-                      borderRadius={3}
-                      duration={700}
-                    />
-                    <Text style={[styles.metricValue, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>
-                      {data.risk_level} &middot; {riskPct.toFixed(0)}%
-                    </Text>
-                    <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.basedOnTrend')}</Text>
-                  </View>
-                  <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                    <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.businessImpact')}</Text>
-                    <AnimatedBar
-                      percentage={impactPct}
-                      color={impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow}
-                      trackColor={colors.barTrack}
-                      height={6}
-                      borderRadius={3}
-                      duration={700}
-                    />
-                    <Text style={[styles.metricValue, { color: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]}>
-                      {data.impact_score} &middot; {impactPct.toFixed(0)}%
-                    </Text>
-                    <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.weeklySpend', { amount: weeklyFuelCost.toFixed(0) })}</Text>
-                  </View>
+                  <GlowEffect
+                    variant={data.risk_level === 'High' ? 'danger' : data.risk_level === 'Moderate' ? 'warning' : 'success'}
+                    size={3}
+                    duration={3000}
+                  >
+                    <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.fuelRisk')}</Text>
+                      <AnimatedBar
+                        percentage={riskPct}
+                        color={(colors as any)[`risk${data.risk_level}`] || colors.riskModerate}
+                        trackColor={colors.barTrack}
+                        height={6}
+                        borderRadius={3}
+                        duration={700}
+                      />
+                      <Text style={[styles.metricValue, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>
+                        {data.risk_level} &middot; {riskPct.toFixed(0)}%
+                      </Text>
+                      <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.basedOnTrend')}</Text>
+                    </View>
+                  </GlowEffect>
+                  <GlowEffect
+                    variant={impactPct > 50 ? 'danger' : impactPct > 25 ? 'warning' : 'success'}
+                    size={3}
+                    duration={3000}
+                  >
+                    <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.businessImpact')}</Text>
+                      <AnimatedBar
+                        percentage={impactPct}
+                        color={impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow}
+                        trackColor={colors.barTrack}
+                        height={6}
+                        borderRadius={3}
+                        duration={700}
+                      />
+                      <Text style={[styles.metricValue, { color: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]}>
+                        {data.impact_score} &middot; {impactPct.toFixed(0)}%
+                      </Text>
+                      <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.weeklySpend', { amount: weeklyFuelCost.toFixed(0) })}</Text>
+                    </View>
+                  </GlowEffect>
                 </View>
               </SlideInView>
 

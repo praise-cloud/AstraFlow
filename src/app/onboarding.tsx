@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useAppColor } from '@/hooks/useAppColor';
 import { completeOnboarding } from '@/services/onboarding';
+import { AnimatedPressable } from '@/components/animations/AnimatedPressable';
 
 export default function OnboardingScreen() {
   const { width } = useWindowDimensions();
@@ -136,10 +137,12 @@ export default function OnboardingScreen() {
       {renderDots()}
 
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
+        <AnimatedPressable
           style={[styles.primaryButton, { backgroundColor: colors.textWhite }]}
           onPress={handleNext}
-          activeOpacity={0.85}
+          scaleTo={0.96}
+          haptic={isLastSlide ? 'medium' : 'light'}
+          sound={isLastSlide ? 'success' : 'tap'}
         >
           <Text style={[styles.primaryButtonText, { color: colors.bgPrimary }]}>
             {isLastSlide ? t('onboarding.getStarted') : t('onboarding.next')}
@@ -149,7 +152,7 @@ export default function OnboardingScreen() {
             size={20}
             color={colors.bgPrimary}
           />
-        </TouchableOpacity>
+        </AnimatedPressable>
       </View>
     </SafeAreaView>
   );
