@@ -18,6 +18,7 @@ import { isAuthenticated, restoreAuth } from '@/services/auth';
 import { registerForPushNotifications } from '@/services/notifications';
 import { isOnboardingCompleted } from '@/services/onboarding';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { ToastProvider } from '@/context/ToastContext';
 import { useAppColor } from '@/hooks/useAppColor';
 import { readyPromise as i18nReady } from '@/i18n';
 import { PulsingDot } from '@/components/animations/PulsingDot';
@@ -116,15 +117,17 @@ function RootLayoutInner() {
 
   return (
     <GluestackUIProvider config={azureClarityConfig}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="welcome" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="survey" options={{ presentation: 'modal' }} />
-      </Stack>
-      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <ToastProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="welcome" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="survey" options={{ presentation: 'modal' }} />
+        </Stack>
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      </ToastProvider>
     </GluestackUIProvider>
   );
 }

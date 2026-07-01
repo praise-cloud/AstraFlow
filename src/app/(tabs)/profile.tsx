@@ -11,6 +11,7 @@ import { api } from '@/services/api';
 import { registerForPushNotifications, unregisterPushNotifications } from '@/services/notifications';
 import { useAppColor } from '@/hooks/useAppColor';
 import { useTheme } from '@/context/ThemeContext';
+import { useToast } from '@/context/ToastContext';
 import { changeLanguage, getCurrentLanguage } from '@/i18n';
 
 const FUEL_TYPES = [
@@ -51,6 +52,7 @@ export default function ProfileScreen() {
   const colors = useAppColor();
   const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation();
+  const { showToast } = useToast();
 
   useEffect(() => {
     getUserAsync().then(setUserState);
@@ -85,7 +87,7 @@ export default function ProfileScreen() {
       }
       setPushEnabled(value);
     } catch {
-      Alert.alert('Error', t('profile.notifError') || 'Failed to update notification settings');
+      showToast({ type: 'error', title: 'Error', message: t('profile.notifError') || 'Failed to update notification settings' });
     } finally {
       setToggling(false);
     }
@@ -119,7 +121,7 @@ export default function ProfileScreen() {
 
   const saveProfile = async () => {
     if (!editName.trim()) {
-      Alert.alert('Error', 'Name cannot be empty');
+      showToast({ type: 'warning', title: 'Validation', message: 'Name cannot be empty' });
       return;
     }
     setSaving(true);
@@ -132,9 +134,9 @@ export default function ProfileScreen() {
       await setUser(updated);
       setUserState(prev => prev ? { ...prev, ...updated } : updated);
       setEditing(false);
-      Alert.alert('Success', 'Profile updated successfully');
+      showToast({ type: 'success', title: 'Success', message: 'Profile updated successfully' });
     } catch (err: any) {
-      Alert.alert('Error', err.detail || 'Failed to update profile');
+      showToast({ type: 'error', title: 'Error', message: err.detail || 'Failed to update profile' });
     } finally {
       setSaving(false);
     }
@@ -155,7 +157,7 @@ export default function ProfileScreen() {
       await setUser(updatedUser);
       setUserState(updatedUser);
     } catch (err: any) {
-      Alert.alert('Error', err.detail || 'Failed to upload avatar');
+      showToast({ type: 'error', title: 'Error', message: err.detail || 'Failed to upload avatar' });
     }
   };
 

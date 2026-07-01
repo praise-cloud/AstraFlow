@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { api } from '@/services/api';
+import { useToast } from '@/context/ToastContext';
 
 const CONCERN_AREAS = [
   { id: 'transport', label: 'Transport Costs' },
@@ -20,6 +21,7 @@ const IMPACT_LEVELS = [
 ];
 
 export default function SurveyScreen() {
+  const { showToast } = useToast();
   const [step, setStep] = useState(0);
   const [monthlySpend, setMonthlySpend] = useState('');
   const [impactLevel, setImpactLevel] = useState('');
@@ -42,15 +44,14 @@ export default function SurveyScreen() {
         concern_areas: concernAreas.length > 0 ? concernAreas : undefined,
         comments: comments || undefined,
       });
-      Alert.alert('Thank you!', 'Your response helps improve AstraFlow insights.', [
-        { text: 'Done', onPress: () => router.back() },
-      ]);
+      showToast({ type: 'success', title: 'Thank you!', message: 'Your response helps improve AstraFlow insights.' });
+      router.back();
     } catch (err: any) {
       if (err.status === 401) {
         router.replace('/login');
         return;
       }
-      Alert.alert('Error', err.detail || 'Failed to submit survey');
+      showToast({ type: 'error', title: 'Error', message: err.detail || 'Failed to submit survey' });
     } finally {
       setLoading(false);
     }
