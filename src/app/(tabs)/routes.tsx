@@ -393,6 +393,14 @@ export default function RoutesScreen() {
             )}
           </View>
 
+          {routes.length === 0 && (
+            <View style={[styles.placeholderCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+              <Ionicons name="map-outline" size={36} color={colors.textMuted} style={{ opacity: 0.4 }} />
+              <Text style={[styles.placeholderTitle, { color: colors.textMuted }]}>No routes yet</Text>
+              <Text style={[styles.placeholderSubtext, { color: colors.textSecondary }]}>Enter your origin and destination above to find the best route.</Text>
+            </View>
+          )}
+
           {routes.length > 0 && (
             <>
               <View style={[styles.fuelDetailCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderLeftColor: colors.accentPetrol }]}>
@@ -589,4 +597,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6,
   },
   metaChipText: { fontSize: 11, fontWeight: '600' },
+  placeholderCard: {
+    borderRadius: 14, borderWidth: 1, borderStyle: 'dashed',
+    marginHorizontal: 15, marginTop: 12,
+    padding: 28, gap: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  placeholderTitle: { fontSize: 15, fontWeight: '600', marginTop: 4 },
+  placeholderSubtext: { fontSize: 13, textAlign: 'center', lineHeight: 18 },
 });
