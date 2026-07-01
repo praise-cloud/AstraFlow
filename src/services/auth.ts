@@ -84,7 +84,7 @@ async function clearTokenNative(): Promise<void> {
   ]);
 }
 
-async function getUserNative(): Promise<{ id: string; email: string; full_name: string; business_type: string; fuel_type: string; avatar_url: string | null } | null> {
+async function getUserNative(): Promise<{ id: string; email: string; full_name: string; business_type: string; fuel_type: string; avatar_url: string | null; preferred_unit: string } | null> {
   return secureStoreGet(USER_KEY).then(raw => {
     if (!raw) return null;
     try { return JSON.parse(raw); } catch { return null; }
@@ -131,6 +131,7 @@ export type UserData = {
   business_type: string;
   fuel_type: string;
   avatar_url: string | null;
+  preferred_unit: string;
 };
 
 export function getUser(): UserData | null {

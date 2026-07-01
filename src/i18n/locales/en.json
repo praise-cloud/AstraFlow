@@ -50,7 +50,11 @@
     "refillPlaceholder": "e.g. 45",
     "logRefillBtn": "Log Refill",
     "weeklySpend": "Weekly Rs {{amount}} spend",
-    "yourUsage": "Your Usage"
+    "yourUsage": "Your Usage",
+    "weeklyInsightsTitle": "Weekly Outlook",
+    "weeklyInsightTrend": "Prices trending {{direction}} this week",
+    "weeklyInsightSavings": "Potential savings",
+    "weeklyInsightSpend": "Est. weekly spend: Rs {{amount}}"
   },
   "prices": {
     "header": "AstraFlow",
@@ -146,7 +150,19 @@
     "english": "English",
     "french": "Français",
     "languageChanged": "Language changed to {{lang}}",
-    "notifError": "Failed to update notification settings"
+    "notifError": "Failed to update notification settings",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "passwordChanged": "Password changed successfully",
+    "passwordError": "Failed to change password",
+    "passwordTooShort": "New password must be at least 6 characters",
+    "preferredUnit": "Units",
+    "liters": "Liters (L)",
+    "galUs": "Gallons (US)",
+    "galUk": "Gallons (UK)",
+    "weeklyInsights": "Weekly Insights",
+    "weeklyInsightsDesc": "Personalised fuel market summary for your week ahead"
   },
   "login": {
     "tagline": "Sign in to access your fuel insights and predictions.",

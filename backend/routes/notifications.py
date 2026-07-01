@@ -33,6 +33,7 @@ class PreferencesBody(BaseModel):
     alert_on_petrol: Optional[bool] = None
     alert_on_diesel: Optional[bool] = None
     alerts_enabled: Optional[bool] = None
+    weekly_insights: Optional[bool] = None
 
 
 @router.post("/register")
@@ -113,6 +114,7 @@ def get_preferences(
         "min_change_pct": token.min_change_pct if token else 2.0,
         "alert_on_petrol": token.alert_on_petrol if token else True,
         "alert_on_diesel": token.alert_on_diesel if token else True,
+        "weekly_insights": token.weekly_insights if token else True,
     }
 
 
@@ -137,5 +139,7 @@ def update_preferences(
         token.alert_on_diesel = body.alert_on_diesel
     if body.alerts_enabled is not None:
         token.alerts_enabled = body.alerts_enabled
+    if body.weekly_insights is not None:
+        token.weekly_insights = body.weekly_insights
     db.commit()
     return {"message": "Preferences updated"}
