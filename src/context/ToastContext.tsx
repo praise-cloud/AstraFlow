@@ -209,10 +209,10 @@ const styles = StyleSheet.create({
   toastCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingRight: 10,
-    paddingBottom: 0,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingRight: 12,
+    paddingBottom: 10,
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -220,24 +220,24 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   toastAccent: {
-    width: 4,
+    width: 5,
     alignSelf: 'stretch',
-    marginRight: 10,
+    marginRight: 12,
   },
   toastIcon: {
     marginRight: 8,
   },
   toastContent: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   toastTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
   },
   toastMessage: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
   },
   toastDismiss: {
     padding: 4,
