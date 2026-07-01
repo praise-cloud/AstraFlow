@@ -1,7 +1,7 @@
 import logging
 import os
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 logger = logging.getLogger("astraflow.database")
@@ -29,6 +29,24 @@ Base = declarative_base()
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    _ensure_columns_exist()
+
+
+def _ensure_columns_exist():
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("users")]
+    additions = []
+    if "fuel_type" not in columns:
+        additions.append("ADD COLUMN fuel_type VARCHAR(20) NOT NULL DEFAULT 'petrol'")
+    if "avatar_url" not in columns:
+        additions.append("ADD COLUMN avatar_url VARCHAR(512)")
+    for stmt in additions:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text(f"ALTER TABLE users {stmt}"))
+                conn.commit()
+        except Exception:
+            pass
 
 
 def get_db():

@@ -57,6 +57,12 @@ def _user_dict(user: User) -> dict:
 
 @router.post("/register")
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
+    if not req.email or "@" not in req.email:
+        raise HTTPException(status_code=400, detail="Valid email is required")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if not req.full_name or not req.full_name.strip():
+        raise HTTPException(status_code=400, detail="Full name is required")
     if req.business_type not in [e.value for e in BusinessType]:
         raise HTTPException(status_code=400, detail="Invalid business type")
     if req.fuel_type not in [e.value for e in FuelType]:
@@ -66,16 +72,20 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    user = User(
-        email=req.email,
-        password_hash=hash_password(req.password),
-        full_name=req.full_name,
-        business_type=req.business_type,
-        fuel_type=req.fuel_type,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    try:
+        user = User(
+            email=req.email,
+            password_hash=hash_password(req.password),
+            full_name=req.full_name.strip(),
+            business_type=req.business_type,
+            fuel_type=req.fuel_type,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
     token = create_access_token(str(user.id))
     return {"token": token, "user": _user_dict(user)}
