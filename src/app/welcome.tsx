@@ -11,12 +11,12 @@ export default function WelcomeScreen() {
   const colors = useAppColor();
   const { t } = useTranslation();
 
-  const handleCreateAccount = async () => {
+  const handleNewHere = async () => {
     await completeOnboarding();
     router.replace('/register');
   };
 
-  const handleLogin = async () => {
+  const handleWelcomeBack = async () => {
     await completeOnboarding();
     router.replace('/login');
   };
@@ -32,24 +32,22 @@ export default function WelcomeScreen() {
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        <Text style={[styles.ctaText, { color: colors.textPrimary }]}>{t('welcome.cta')}</Text>
-
         <TouchableOpacity
           style={[styles.primaryBtn, { backgroundColor: colors.accentPetrol }]}
-          onPress={handleCreateAccount}
+          onPress={handleNewHere}
           activeOpacity={0.8}
         >
           <Ionicons name="person-add-outline" size={20} color={colors.textWhite} />
-          <Text style={[styles.primaryBtnText, { color: colors.textWhite }]}>{t('welcome.createAccount')}</Text>
+          <Text style={[styles.primaryBtnText, { color: colors.textWhite }]}>{t('welcome.newHere')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.secondaryBtn, { borderColor: colors.accentPetrol }]}
-          onPress={handleLogin}
+          onPress={handleWelcomeBack}
           activeOpacity={0.8}
         >
-          <Text style={[styles.secondaryBtnText, { color: colors.accentPetrol }]}>{t('welcome.returning')}</Text>
-          <Ionicons name="arrow-forward" size={18} color={colors.accentPetrol} />
+          <Ionicons name="log-in-outline" size={18} color={colors.accentPetrol} />
+          <Text style={[styles.secondaryBtnText, { color: colors.accentPetrol }]}>{t('welcome.welcomeBack')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -90,12 +88,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 1,
     marginVertical: 8,
-  },
-  ctaText: {
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: 300,
   },
   primaryBtn: {
     flexDirection: 'row',

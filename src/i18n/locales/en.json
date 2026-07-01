@@ -201,8 +201,8 @@
   },
   "welcome": {
     "cta": "Start managing your fuel costs smarter with real-time insights.",
-    "createAccount": "Create an Account",
-    "returning": "I've been here before"
+    "newHere": "I'm new here",
+    "welcomeBack": "Welcome back"
   },
   "splash": {
     "title": "AstraFlow",

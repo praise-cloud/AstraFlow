@@ -201,8 +201,8 @@
   },
   "welcome": {
     "cta": "Gérez vos coûts de carburant plus intelligemment grâce à des informations en temps réel.",
-    "createAccount": "Créer un Compte",
-    "returning": "Déjà inscrit"
+    "newHere": "Je suis nouveau",
+    "welcomeBack": "Bon retour"
   },
   "splash": {
     "title": "AstraFlow",

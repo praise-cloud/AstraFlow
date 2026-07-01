@@ -79,16 +79,16 @@ export default function OnboardingScreen() {
   const renderSlide = ({ item }: { item: typeof slides[0] }) => (
     <View style={[styles.slide, { width }]}>
       <View style={styles.iconContainer}>
-        <View style={[styles.iconBox, { backgroundColor: colors.bgPrimary }]}>
+        <View style={[styles.iconBox, { backgroundColor: colors.textWhite }]}>
           {item.iconSet === 'Ionicons' ? (
-            <Ionicons name={item.iconName} size={64} color={colors.textWhite} />
+            <Ionicons name={item.iconName} size={64} color={colors.bgPrimary} />
           ) : (
-            <MaterialCommunityIcons name={item.iconName} size={64} color={colors.textWhite} />
+            <MaterialCommunityIcons name={item.iconName} size={64} color={colors.bgPrimary} />
           )}
         </View>
       </View>
-      <Text style={[styles.title, { color: colors.textPrimary }]}>{item.title}</Text>
-      <Text style={[styles.description, { color: colors.textSecondary }]}>
+      <Text style={[styles.title, { color: colors.textWhite }]}>{item.title}</Text>
+      <Text style={[styles.description, { color: 'rgba(255,255,255,0.8)' }]}>
         {item.description}
       </Text>
     </View>
@@ -102,7 +102,7 @@ export default function OnboardingScreen() {
           style={[
             styles.dot,
             {
-              backgroundColor: index === currentIndex ? colors.accentPetrol : colors.border,
+              backgroundColor: index === currentIndex ? colors.textWhite : 'rgba(255,255,255,0.35)',
               width: index === currentIndex ? 24 : 8,
             },
           ]}
@@ -112,10 +112,10 @@ export default function OnboardingScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       {!isLastSlide && (
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={[styles.skipText, { color: colors.textMuted }]}>
+          <Text style={[styles.skipText, { color: 'rgba(255,255,255,0.7)' }]}>
             {t('onboarding.skip')}
           </Text>
         </TouchableOpacity>
@@ -137,17 +137,17 @@ export default function OnboardingScreen() {
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={[styles.primaryButton, { backgroundColor: colors.accentPetrol }]}
+          style={[styles.primaryButton, { backgroundColor: colors.textWhite }]}
           onPress={handleNext}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <Text style={[styles.primaryButtonText, { color: colors.textWhite }]}>
+          <Text style={[styles.primaryButtonText, { color: colors.bgPrimary }]}>
             {isLastSlide ? t('onboarding.getStarted') : t('onboarding.next')}
           </Text>
           <Ionicons
             name={isLastSlide ? 'checkmark-circle' : 'arrow-forward'}
             size={20}
-            color={colors.textWhite}
+            color={colors.bgPrimary}
           />
         </TouchableOpacity>
       </View>
