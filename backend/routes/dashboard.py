@@ -21,6 +21,9 @@ router = APIRouter(prefix="/api", tags=["dashboard"])
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
+_last_stc_scrape: Optional[datetime] = None
+_SCRAPE_COOLDOWN = timedelta(hours=1)
+
 
 def _get_oldest_new_price(db: Session, fuel_type: str) -> Optional[float]:
     r = db.query(FuelPrice).filter(FuelPrice.fuel_type == fuel_type).order_by(FuelPrice.date.desc()).first()
@@ -88,6 +91,11 @@ def _send_price_alerts(db: Session, old_petrol: Optional[float], old_diesel: Opt
 
 
 def _ensure_prices_scraped(db: Session):
+    global _last_stc_scrape
+    if _last_stc_scrape and datetime.now() - _last_stc_scrape < _SCRAPE_COOLDOWN:
+        logger.debug("STC scrape skipped — last attempt was less than 1 hour ago")
+        return
+
     last = db.query(FuelPrice).order_by(FuelPrice.date.desc()).first()
     if last and last.date >= date_lib.today() - timedelta(days=7):
         return
@@ -95,6 +103,7 @@ def _ensure_prices_scraped(db: Session):
     old_petrol = _get_oldest_new_price(db, "petrol")
     old_diesel = _get_oldest_new_price(db, "diesel")
 
+    _last_stc_scrape = datetime.now()
     logger.info("Dashboard: prices stale, scraping STC…")
     fresh = fetch_retail_prices()
     if not fresh:
