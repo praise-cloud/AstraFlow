@@ -101,6 +101,13 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     return {"token": token, "user": _user_dict(user)}
 
 
+@router.get("/profile")
+def get_profile(
+    user: User = Depends(get_current_user),
+):
+    return _user_dict(user)
+
+
 @router.put("/profile")
 def update_profile(
     req: ProfileUpdateRequest,
@@ -146,3 +153,18 @@ async def upload_avatar(
     db.commit()
     db.refresh(user)
     return {"avatar_url": avatar_url}
+
+
+@router.delete("/avatar")
+def delete_avatar(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if user.avatar_url:
+        fname = user.avatar_url.split("/")[-1]
+        fpath = os.path.join(UPLOAD_DIR, fname)
+        if os.path.exists(fpath):
+            os.remove(fpath)
+    user.avatar_url = None
+    db.commit()
+    return {"avatar_url": None}

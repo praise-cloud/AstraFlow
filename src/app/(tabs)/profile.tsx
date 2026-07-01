@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, Switch, TextInput, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -54,8 +54,13 @@ export default function ProfileScreen() {
   const { t } = useTranslation();
   const { showToast } = useToast();
 
-  useEffect(() => {
-    getUserAsync().then(setUserState);
+  const loadProfile = useCallback(() => {
+    api.profile.get()
+      .then(profile => {
+        setUserState(profile);
+        setUser(profile);
+      })
+      .catch(() => getUserAsync().then(setUserState));
     api.notifications.preferences()
       .then(prefs => {
         setPushEnabled(prefs.push_enabled);
@@ -65,6 +70,8 @@ export default function ProfileScreen() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => { loadProfile(); }, []);
 
   const updatePrefs = (patch: Record<string, unknown>) => {
     api.notifications.updatePreferences(patch).catch(() => {});
@@ -198,6 +205,21 @@ export default function ProfileScreen() {
             <View style={[styles.cameraBadge, { backgroundColor: colors.accentPetrol }]}>
               <Ionicons name="camera" size={14} color={colors.textWhite} />
             </View>
+            {user?.avatar_url && (
+              <TouchableOpacity
+                style={[styles.avatarDeleteBadge, { backgroundColor: colors.trendUp }]}
+                onPress={async () => {
+                  try {
+                    await api.profile.deleteAvatar();
+                    const updated = { ...user, avatar_url: null };
+                    setUserState(updated as UserData);
+                    setUser(updated);
+                  } catch { showToast({ type: 'error', title: 'Error', message: 'Failed to remove avatar' }); }
+                }}
+              >
+                <Ionicons name="close" size={12} color={colors.textWhite} />
+              </TouchableOpacity>
+            )}
           </TouchableOpacity>
 
           <Text style={[styles.name, { color: colors.textPrimary }]}>{editing ? editName : (user?.full_name || t('profile.user'))}</Text>
@@ -463,6 +485,12 @@ const styles = StyleSheet.create({
   cameraBadge: {
     position: 'absolute', bottom: 0, right: 0,
     width: 26, height: 26, borderRadius: 13,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#fff',
+  },
+  avatarDeleteBadge: {
+    position: 'absolute', top: 0, right: 0,
+    width: 22, height: 22, borderRadius: 11,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: '#fff',
   },

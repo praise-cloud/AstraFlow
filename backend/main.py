@@ -6,6 +6,7 @@ load_dotenv(Path(__file__).parent / ".env")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from backend.db.database import init_db
 from backend.routes import auth, dashboard, predict, prices, surveys, notifications, news, routes
@@ -27,6 +28,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="uploads"), name="static")
 
 app.include_router(auth.router)
 app.include_router(dashboard.router)

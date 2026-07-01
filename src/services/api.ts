@@ -19,10 +19,11 @@ async function request<T = any>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = getToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  };
+  const headers: Record<string, string> = {};
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  Object.assign(headers, options.headers as Record<string, string> || {});
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -109,11 +110,17 @@ export const api = {
   },
 
   profile: {
+    get: () =>
+      request<UserResponse>('/auth/profile'),
+
     update: (data: { full_name?: string; business_type?: string; fuel_type?: string }) =>
       request<UserResponse>('/auth/profile', {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
+
+    deleteAvatar: () =>
+      request<{ avatar_url: null }>('/auth/avatar', { method: 'DELETE' }),
 
     uploadAvatar: (fileUri: string) =>
       request<{ avatar_url: string }>('/auth/avatar', {
