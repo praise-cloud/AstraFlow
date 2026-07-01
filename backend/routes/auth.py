@@ -8,6 +8,7 @@ from backend.db.database import get_db, Base
 from backend.models.user import User, BusinessType, FuelType
 from backend.services.auth import hash_password, verify_password, create_access_token, decode_access_token
 from fastapi import Header
+import threading
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -55,6 +56,11 @@ def _user_dict(user: User) -> dict:
     }
 
 
+def _warmup_ml():
+    from backend.ml.forecast import get_forecaster
+    get_forecaster()
+
+
 @router.post("/register")
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
     if not req.email or "@" not in req.email:
@@ -88,6 +94,9 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
     token = create_access_token(str(user.id))
+
+    threading.Thread(target=_warmup_ml, daemon=True).start()
+
     return {"token": token, "user": _user_dict(user)}
 
 
@@ -98,6 +107,9 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token(str(user.id))
+
+    threading.Thread(target=_warmup_ml, daemon=True).start()
+
     return {"token": token, "user": _user_dict(user)}
 
 

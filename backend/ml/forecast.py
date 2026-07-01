@@ -14,6 +14,7 @@ retraining on every call.
 """
 
 from datetime import datetime, timezone, timedelta
+import threading
 import numpy as np
 
 from backend.ml.data import (
@@ -245,6 +246,7 @@ class FuelForecaster:
 _forecaster_instance: FuelForecaster | None = None
 _last_forecast_time: datetime | None = None
 _RETRAIN_INTERVAL = timedelta(hours=6)
+_forecaster_lock = threading.Lock()
 
 
 def get_forecaster() -> FuelForecaster:
@@ -259,11 +261,12 @@ def get_forecaster() -> FuelForecaster:
 
     now = datetime.now(timezone.utc)
 
-    if _forecaster_instance is None:
-        _forecaster_instance = FuelForecaster()
-        _forecaster_instance.train()
-        _last_forecast_time = now
-    elif _last_forecast_time and (now - _last_forecast_time) > _RETRAIN_INTERVAL:
+    with _forecaster_lock:
+        if _forecaster_instance is None:
+            _forecaster_instance = FuelForecaster()
+            _forecaster_instance.train()
+            _last_forecast_time = now
+    if _forecaster_instance is not None and _last_forecast_time and (now - _last_forecast_time) > _RETRAIN_INTERVAL:
         _forecaster_instance._retrain_if_needed(force=True)
         _last_forecast_time = now
 

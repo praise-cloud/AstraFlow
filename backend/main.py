@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+import threading
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env")
@@ -13,10 +14,16 @@ from backend.routes import auth, dashboard, predict, prices, surveys, notificati
 from backend.seed import seed
 
 
+def _warmup_ml():
+    from backend.ml.forecast import get_forecaster
+    get_forecaster()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     seed()
+    threading.Thread(target=_warmup_ml, daemon=True).start()
     yield
 
 
