@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 
 import { getUserAsync, setUser, clearToken, UserData } from '@/services/auth';
-import { api } from '@/services/api';
+import { api, avatarUrl } from '@/services/api';
 import { registerForPushNotifications, unregisterPushNotifications } from '@/services/notifications';
 import { useAppColor } from '@/hooks/useAppColor';
 import { useTheme } from '@/context/ThemeContext';
@@ -192,7 +192,7 @@ export default function ProfileScreen() {
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={pickAvatar} style={styles.avatarWrapper}>
             {user?.avatar_url ? (
-              <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+              <Image source={{ uri: avatarUrl(user.avatar_url) ?? undefined }} style={styles.avatar} />
             ) : user?.full_name ? (
               <View style={[styles.avatar, { backgroundColor: colors.accentPetrol }]}>
                 <Text style={[styles.avatarText, { color: colors.textWhite }]}>
@@ -210,9 +210,8 @@ export default function ProfileScreen() {
                 style={[styles.avatarDeleteBadge, { backgroundColor: colors.trendUp }]}
                 onPress={async () => {
                   try {
-                    await api.profile.deleteAvatar();
-                    const updated = { ...user, avatar_url: null };
-                    setUserState(updated as UserData);
+                    const updated = await api.profile.deleteAvatar();
+                    setUserState(updated);
                     setUser(updated);
                   } catch { showToast({ type: 'error', title: 'Error', message: 'Failed to remove avatar' }); }
                 }}

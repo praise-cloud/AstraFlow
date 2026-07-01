@@ -1,6 +1,6 @@
 import os
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -9,6 +9,7 @@ from backend.models.user import User, BusinessType, FuelType
 from backend.services.auth import hash_password, verify_password, create_access_token, decode_access_token
 from fastapi import Header
 import threading
+from urllib.parse import urljoin
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -147,6 +148,7 @@ UPLOAD_DIR = "uploads/avatars"
 
 @router.post("/avatar")
 async def upload_avatar(
+    request: Request,
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -160,7 +162,8 @@ async def upload_avatar(
     with open(filepath, "wb") as f:
         f.write(contents)
 
-    avatar_url = f"/static/avatars/{filename}"
+    base = str(request.base_url).rstrip("/")
+    avatar_url = f"{base}/static/avatars/{filename}"
     user.avatar_url = avatar_url
     db.commit()
     db.refresh(user)
@@ -179,4 +182,5 @@ def delete_avatar(
             os.remove(fpath)
     user.avatar_url = None
     db.commit()
-    return {"avatar_url": None}
+    db.refresh(user)
+    return _user_dict(user)
