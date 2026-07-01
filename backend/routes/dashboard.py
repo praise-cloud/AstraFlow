@@ -223,10 +223,14 @@ def _get_recommendation(db: Session, business_type: str) -> dict:
 
 @router.get("/dashboard")
 def get_dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        oil_future = pool.submit(fetch_global_prices)
-        _ensure_prices_scraped(db)
-        global_prices = oil_future.result()
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            oil_future = pool.submit(fetch_global_prices)
+            _ensure_prices_scraped(db)
+            global_prices = oil_future.result()
+    except Exception:
+        logger.exception("Dashboard: parallel fetch failed, falling back to sequential")
+        global_prices = fetch_global_prices()
 
     prices = _get_latest_prices(db)
     trend = _get_trend(db)
@@ -242,7 +246,8 @@ def get_dashboard(user: User = Depends(get_current_user), db: Session = Depends(
         forecast_data = forecaster.forecast(days=7, fuel_type="petrol")
         evaluation = forecast_data.get("evaluation", {"mae": 0, "rmse": 0, "r2": 0})
         model_name = forecast_data.get("model", "Linear Regression (numpy)")
-    except ValueError:
+    except Exception:
+        logger.exception("Dashboard: forecast failed")
         evaluation = {"mae": 0, "rmse": 0, "r2": 0}
         model_name = "Insufficient data"
 
