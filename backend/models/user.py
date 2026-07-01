@@ -30,4 +30,5 @@ class User(Base):
     business_type = Column(SAEnum(BusinessType, values_callable=lambda x: [e.value for e in x]), nullable=False)
     fuel_type = Column(SAEnum(FuelType, values_callable=lambda x: [e.value for e in x]), default=FuelType.PETROL, nullable=False)
     avatar_url = Column(String(512), nullable=True)
+    preferred_unit = Column(String(10), default='L', nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))

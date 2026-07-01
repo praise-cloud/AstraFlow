@@ -50,7 +50,11 @@
     "refillPlaceholder": "ex. 45",
     "logRefillBtn": "Enregistrer",
     "weeklySpend": "Rs {{amount}} par semaine",
-    "yourUsage": "Votre Consommation"
+    "yourUsage": "Votre Consommation",
+    "weeklyInsightsTitle": "Aperçu Hebdomadaire",
+    "weeklyInsightTrend": "Les prix {{direction}} cette semaine",
+    "weeklyInsightSavings": "Économies potentielles",
+    "weeklyInsightSpend": "Dépense hebdo estimée : Rs {{amount}}"
   },
   "prices": {
     "header": "AstraFlow",
@@ -146,7 +150,19 @@
     "english": "English",
     "french": "Français",
     "languageChanged": "Langue changée en {{lang}}",
-    "notifError": "Échec de la mise à jour des notifications"
+    "notifError": "Échec de la mise à jour des notifications",
+    "changePassword": "Changer le Mot de Passe",
+    "currentPassword": "Mot de Passe Actuel",
+    "newPassword": "Nouveau Mot de Passe",
+    "passwordChanged": "Mot de passe modifié avec succès",
+    "passwordError": "Échec du changement de mot de passe",
+    "passwordTooShort": "Le nouveau mot de passe doit contenir au moins 6 caractères",
+    "preferredUnit": "Unités",
+    "liters": "Litres (L)",
+    "galUs": "Gallons (US)",
+    "galUk": "Gallons (UK)",
+    "weeklyInsights": "Aperçu Hebdomadaire",
+    "weeklyInsightsDesc": "Résumé personnalisé du marché du carburant pour votre semaine"
   },
   "login": {
     "tagline": "Connectez-vous pour accéder à vos informations et prévisions carburant.",

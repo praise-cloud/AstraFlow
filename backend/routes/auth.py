@@ -31,6 +31,12 @@ class ProfileUpdateRequest(BaseModel):
     full_name: Optional[str] = None
     business_type: Optional[str] = None
     fuel_type: Optional[str] = None
+    preferred_unit: Optional[str] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 
 def get_current_user(authorization: str = Header(...), db: Session = Depends(get_db)):
@@ -54,6 +60,7 @@ def _user_dict(user: User) -> dict:
         "business_type": user.business_type,
         "fuel_type": user.fuel_type,
         "avatar_url": user.avatar_url,
+        "preferred_unit": user.preferred_unit,
     }
 
 
@@ -137,10 +144,30 @@ def update_profile(
         if req.fuel_type not in [e.value for e in FuelType]:
             raise HTTPException(status_code=400, detail="Invalid fuel type")
         user.fuel_type = req.fuel_type
+    if req.preferred_unit is not None:
+        if req.preferred_unit not in ("L", "gal_us", "gal_uk"):
+            raise HTTPException(status_code=400, detail="Invalid unit. Must be L, gal_us, or gal_uk")
+        user.preferred_unit = req.preferred_unit
 
     db.commit()
     db.refresh(user)
     return _user_dict(user)
+
+
+@router.put("/change-password")
+def change_password(
+    req: ChangePasswordRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    if not verify_password(req.current_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    user.password_hash = hash_password(req.new_password)
+    db.commit()
+    return {"message": "Password changed successfully"}
 
 
 UPLOAD_DIR = "uploads/avatars"

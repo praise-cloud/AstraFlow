@@ -44,6 +44,8 @@ def _ensure_columns_exist():
                 additions.append("ADD COLUMN fuel_type VARCHAR(20) NOT NULL DEFAULT 'petrol'")
             if "avatar_url" not in columns:
                 additions.append("ADD COLUMN avatar_url VARCHAR(512)")
+            if "preferred_unit" not in columns:
+                additions.append("ADD COLUMN preferred_unit VARCHAR(10) NOT NULL DEFAULT 'L'")
         elif table == "push_tokens":
             if "min_change_pct" not in columns:
                 additions.append("ADD COLUMN min_change_pct FLOAT NOT NULL DEFAULT 2.0")
@@ -51,6 +53,8 @@ def _ensure_columns_exist():
                 additions.append("ADD COLUMN alert_on_petrol BOOLEAN NOT NULL DEFAULT 1")
             if "alert_on_diesel" not in columns:
                 additions.append("ADD COLUMN alert_on_diesel BOOLEAN NOT NULL DEFAULT 1")
+            if "weekly_insights" not in columns:
+                additions.append("ADD COLUMN weekly_insights BOOLEAN NOT NULL DEFAULT 1")
         for stmt in additions:
             try:
                 with engine.connect() as conn:

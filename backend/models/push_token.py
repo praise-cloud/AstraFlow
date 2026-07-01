@@ -15,4 +15,5 @@ class PushToken(Base):
     min_change_pct = Column(Float, default=2.0)
     alert_on_petrol = Column(Boolean, default=True)
     alert_on_diesel = Column(Boolean, default=True)
+    weekly_insights = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
