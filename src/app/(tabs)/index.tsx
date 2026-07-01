@@ -7,16 +7,12 @@ import { useTranslation } from 'react-i18next';
 
 import { api } from '@/services/api';
 import { getUser } from '@/services/auth';
-import { Sparkline } from '@/components/Sparkline';
 import { useAppColor } from '@/hooks/useAppColor';
 import { getCurrentLanguage } from '@/i18n';
 import { AnimatedPressable } from '@/components/animations/AnimatedPressable';
-import { AnimatedBar } from '@/components/animations/AnimatedBar';
 import { StaggerContainer } from '@/components/animations/StaggerContainer';
 import { SlideInView } from '@/components/animations/SlideInView';
 import { Shimmer } from '@/components/animations/Shimmer';
-import { ColorPopView } from '@/components/animations/ColorPopView';
-import { GlowEffect } from '@/components/animations/GlowEffect';
 
 type DashboardData = {
   current_price: { petrol: number; diesel: number; currency: string; unit: string };
@@ -66,29 +62,6 @@ function formatDate(d: string | Date): string {
   return date.toLocaleDateString(lang === 'fr' ? 'fr-MU' : 'en-MU', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function makeSparklineSmooth(current: number, trend: string, change: number, points: number = 14): number[] {
-  const arr: number[] = [];
-  for (let i = points; i >= 0; i--) {
-    const pct = i / points;
-    const trendVal = trend === 'up' ? change / 100 : -change / 100;
-    const noise = (Math.random() - 0.5) * 0.008;
-    arr.push(parseFloat((current - current * trendVal * pct * pct + noise).toFixed(3)));
-  }
-  return arr;
-}
-
-function calcRiskPercent(risk: string, trend: string): number {
-  const base = risk === 'Low' ? 15 : risk === 'Moderate' ? 45 : 75;
-  const trendBoost = trend === 'up' ? 12 : trend === 'down' ? -8 : 0;
-  return Math.min(100, Math.max(0, base + trendBoost));
-}
-
-function calcImpactPercent(impact: string, change: number): number {
-  const base = impact === 'Low' ? 10 : impact === 'Medium' ? 35 : 65;
-  const changeBoost = change * 2;
-  return Math.min(100, Math.max(0, base + changeBoost));
-}
-
 export default function HomeScreen() {
   const colors = useAppColor();
   const { t } = useTranslation();
@@ -107,8 +80,6 @@ export default function HomeScreen() {
   const showPetrol = userFuelType === 'petrol' || userFuelType === 'both';
   const showDiesel = userFuelType === 'diesel' || userFuelType === 'both';
 
-  const riskPct = data ? calcRiskPercent(data.risk_level, data.trend.petrol) : 0;
-  const impactPct = data ? calcImpactPercent(data.impact_score, data.trend.petrol_change) : 0;
   const dailyEstKm = data?.business_type === 'taxi' ? 120 : data?.business_type === 'delivery' ? 80 : data?.business_type === 'logistics' ? 150 : 30;
   const relevantPrice = showPetrol ? data?.current_price.petrol : data?.current_price.diesel;
   const weeklyFuelCost = data && relevantPrice ? parseFloat(fuelLiters || '0') * relevantPrice * 7 : 0;
@@ -211,163 +182,165 @@ export default function HomeScreen() {
               </AnimatedPressable>
             )}
 
-            <StaggerContainer staggerDelay={100} direction="up" duration={350}>
+            <StaggerContainer staggerDelay={80} direction="up" duration={350}>
+              {/* Row 1: Recommendation (full width, primary blue) */}
               <SlideInView direction="up" duration={400}>
-                <View style={{ flexDirection: 'row', gap: 14 }}>
+                <View style={[styles.recFullCard, { backgroundColor: colors.bgPrimary }]}>
+                  <View style={styles.recFullGlow}>
+                    <Ionicons name="notifications-active" size={100} color={colors.accentPetrol} style={{ opacity: 0.2 }} />
+                  </View>
+                  <Text style={[styles.recFullLabel, { color: colors.textWhite }]}>{t('home.recommendation')}</Text>
+                  <Text style={[styles.recFullTitle, { color: colors.textWhite }]}>{data.recommendation.title}</Text>
+                  <Text style={[styles.recFullText, { color: colors.textWhite }]}>{data.recommendation.content}</Text>
+                </View>
+              </SlideInView>
+
+              {/* Row 2: Petrol | Diesel */}
+              <SlideInView direction="up" duration={400} delay={80}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
                   {showPetrol && (
-                    <View style={[styles.bentoPriceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentPetrol, borderTopWidth: 3, flex: showDiesel ? 1 : undefined }]}>
-                      <View style={styles.bentoPriceTop}>
-                        <MaterialCommunityIcons name="gas-station-outline" size={20} color={colors.accentPetrol} />
-                        <Text style={[styles.bentoPriceLabel, { color: colors.textMuted }]}>{t('common.petrol')}</Text>
+                    <View style={[styles.bentoCard, { backgroundColor: colors.bgCard, borderColor: colors.border, flex: showDiesel ? 1 : undefined }]}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={[styles.bentoCardLabel, { color: colors.textMuted }]}>Petrol</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                          <Ionicons name={data.trend.petrol === 'up' ? 'trending-up' : 'trending-down'} size={14} color={data.trend.petrol === 'up' ? colors.riskHigh : colors.riskLow} />
+                          <Text style={[{ color: data.trend.petrol === 'up' ? colors.riskHigh : colors.riskLow, fontSize: 12, fontWeight: '500' }]}>{data.trend.petrol_change}</Text>
+                        </View>
                       </View>
-                      <Text style={[styles.bentoPriceValue, { color: colors.textPrimary }]}>
+                      <Text style={[styles.bentoCardPrice, { color: colors.textPrimary }]}>
                         Rs {data.current_price.petrol.toFixed(2)}
                         <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
                       </Text>
-                      <View style={styles.bentoPriceFooter}>
-                        <View style={[styles.bentoPriceTrend, { backgroundColor: data.trend.petrol === 'up' ? colors.trendUp + '20' : colors.trendDown + '20' }]}>
-                          <Ionicons name={data.trend.petrol === 'up' ? 'arrow-up' : 'arrow-down'} size={12} color={data.trend.petrol === 'up' ? colors.trendUp : colors.trendDown} />
-                          <Text style={[{ color: data.trend.petrol === 'up' ? colors.trendUp : colors.trendDown, fontSize: 11, fontWeight: '600' }]}>
-                            {data.trend.petrol_change}%
-                          </Text>
-                        </View>
-                        <Sparkline
-                          data={makeSparklineSmooth(data.current_price.petrol, data.trend.petrol, data.trend.petrol_change)}
-                          width={60}
-                          height={28}
-                          color={colors.accentPetrol}
-                          strokeWidth={2}
-                        />
+                      <View style={[styles.bentoCardBadge, { backgroundColor: (data.trend.petrol === 'down' ? colors.riskLow : colors.riskModerate) + '20' }]}>
+                        <Text style={[styles.bentoCardBadgeText, { color: data.trend.petrol === 'down' ? colors.riskLow : colors.riskModerate }]}>
+                          {data.trend.petrol === 'down' ? 'Lowest 7d' : 'Rising'}
+                        </Text>
                       </View>
                     </View>
                   )}
                   {showDiesel && (
-                    <View style={[styles.bentoPriceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentDiesel, borderTopWidth: 3, flex: showPetrol ? 1 : undefined }]}>
-                      <View style={styles.bentoPriceTop}>
-                        <MaterialCommunityIcons name="engine-outline" size={20} color={colors.accentDiesel} />
-                        <Text style={[styles.bentoPriceLabel, { color: colors.textMuted }]}>{t('common.diesel')}</Text>
+                    <View style={[styles.bentoCard, { backgroundColor: colors.bgCard, borderColor: colors.border, flex: showPetrol ? 1 : undefined }]}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={[styles.bentoCardLabel, { color: colors.textMuted }]}>Diesel</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                          <Ionicons name={data.trend.diesel === 'up' ? 'trending-up' : 'trending-down'} size={14} color={data.trend.diesel === 'up' ? colors.riskHigh : colors.riskLow} />
+                          <Text style={[{ color: data.trend.diesel === 'up' ? colors.riskHigh : colors.riskLow, fontSize: 12, fontWeight: '500' }]}>{data.trend.diesel_change}</Text>
+                        </View>
                       </View>
-                      <Text style={[styles.bentoPriceValue, { color: colors.textPrimary }]}>
+                      <Text style={[styles.bentoCardPrice, { color: colors.textPrimary }]}>
                         Rs {data.current_price.diesel.toFixed(2)}
                         <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
                       </Text>
-                      <View style={styles.bentoPriceFooter}>
-                        <View style={[styles.bentoPriceTrend, { backgroundColor: data.trend.diesel === 'up' ? colors.trendUp + '20' : colors.trendDown + '20' }]}>
-                          <Ionicons name={data.trend.diesel === 'up' ? 'arrow-up' : 'arrow-down'} size={12} color={data.trend.diesel === 'up' ? colors.trendUp : colors.trendDown} />
-                          <Text style={[{ color: data.trend.diesel === 'up' ? colors.trendUp : colors.trendDown, fontSize: 11, fontWeight: '600' }]}>
-                            {data.trend.diesel_change}%
-                          </Text>
-                        </View>
-                        <Sparkline
-                          data={makeSparklineSmooth(data.current_price.diesel, data.trend.diesel, data.trend.diesel_change)}
-                          width={60}
-                          height={28}
-                          color={colors.accentDiesel}
-                          strokeWidth={2}
-                        />
+                      <View style={[styles.bentoCardBadge, { backgroundColor: (data.trend.diesel === 'up' ? colors.riskHigh : colors.riskLow) + '20' }]}>
+                        <Text style={[styles.bentoCardBadgeText, { color: data.trend.diesel === 'up' ? colors.riskHigh : colors.riskLow }]}>
+                          {data.trend.diesel === 'up' ? 'Rising' : 'Lowest 7d'}
+                        </Text>
                       </View>
                     </View>
                   )}
                 </View>
               </SlideInView>
 
-              <SlideInView direction="up" duration={400} delay={100}>
-                <View style={{ flexDirection: 'row', gap: 14 }}>
-                  <ColorPopView variant="primary" position="left" thickness={4} style={styles.bentoRecWrapper}>
-                    <View style={[styles.bentoRecCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
-                      <Text style={[styles.bannerLabel, { color: colors.accentPetrol }]}>{t('home.recommendation')}</Text>
-                      <Text style={[styles.bentoRecTitle, { color: colors.textPrimary }]} numberOfLines={1}>{data.recommendation.title}</Text>
-                      <Text style={[styles.bentoRecText, { color: colors.textSecondary }]} numberOfLines={2}>{data.recommendation.content}</Text>
+              {/* Row 3: Market Sentiment | Next Cycle */}
+              <SlideInView direction="up" duration={400} delay={160}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={[styles.bentoCard, { backgroundColor: colors.bgCard, borderColor: colors.border, flex: 1 }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="analytics" size={16} color={colors.accentPetrol} />
+                        <Text style={[styles.bentoCardLabel, { color: colors.textMuted }]}>Market</Text>
+                      </View>
+                      <Text style={[styles.riskBadge, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>{data.risk_level} Risk</Text>
                     </View>
-                  </ColorPopView>
-                  <View style={{ flex: 1, gap: 14 }}>
-                    <GlowEffect variant={data.risk_level === 'High' ? 'danger' : 'warning'} size={2} duration={3000}>
-                      <View style={[styles.bentoMiniCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.fuelRisk')}</Text>
-                        <AnimatedBar percentage={riskPct} color={(colors as any)[`risk${data.risk_level}`] || colors.riskModerate} trackColor={colors.barTrack} height={5} borderRadius={3} duration={700} />
-                        <Text style={[styles.bentoMiniValue, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>{data.risk_level}</Text>
+                    <View style={{ marginTop: 4 }}>
+                      <Text style={[styles.bentoRiskValue, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>
+                        {data.risk_level === 'High' ? 'Volatile' : data.risk_level === 'Moderate' ? 'Stable' : 'Low'}
+                      </Text>
+                      <View style={styles.miniChart}>
+                        {[40, 60, 50, 80, 70, 90].map((h, i) => (
+                          <View key={i} style={[styles.miniChartBar, { backgroundColor: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate, height: `${h}%` as any }]} />
+                        ))}
                       </View>
-                    </GlowEffect>
-                    <GlowEffect variant={impactPct > 50 ? 'danger' : 'warning'} size={2} duration={3000}>
-                      <View style={[styles.bentoMiniCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.businessImpact')}</Text>
-                        <AnimatedBar percentage={impactPct} color={impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow} trackColor={colors.barTrack} height={5} borderRadius={3} duration={700} />
-                        <Text style={[styles.bentoMiniValue, { color: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]}>{data.impact_score}</Text>
+                      <Text style={[styles.bentoCardSubtext, { color: colors.textSecondary }]}>30-day outlook: {data.market_update}</Text>
+                    </View>
+                  </View>
+
+                  {/* Next Cycle + Crude stacked vertically */}
+                  <View style={{ flex: 1, gap: 12 }}>
+                    <View style={[styles.bentoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="calendar" size={16} color={colors.accentPetrol} />
+                        <Text style={[styles.bentoCardLabel, { color: colors.textMuted }]}>Next Cycle</Text>
                       </View>
-                    </GlowEffect>
+                      <View style={{ marginTop: 2 }}>
+                        <Text style={[styles.bentoCycleDay, { color: colors.accentPetrol }]}>Tuesday</Text>
+                        <Text style={[styles.bentoCardSubtext, { color: colors.textSecondary }]}>Best projected day for refilling next week.</Text>
+                      </View>
+                    </View>
+
+                    {data.global_crude?.brent_usd && (
+                      <View style={[styles.bentoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Ionicons name="globe" size={16} color={colors.accentPetrol} />
+                          <Text style={[styles.bentoCardLabel, { color: colors.textMuted }]}>Crude Oil</Text>
+                        </View>
+                        <View style={{ marginTop: 2 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                            <Text style={[styles.bentoCrudePrice, { color: colors.textPrimary }]}>${data.global_crude.brent_usd.toFixed(2)}</Text>
+                            <Text style={[styles.bentoCrudeChange, { color: colors.riskHigh }]}>+1.2%</Text>
+                          </View>
+                          <Text style={[styles.bentoCardSubtext, { color: colors.textSecondary }]}>Brent Crude (USD/bbl)</Text>
+                        </View>
+                      </View>
+                    )}
                   </View>
                 </View>
               </SlideInView>
 
-              <SlideInView direction="up" duration={400} delay={200}>
-                <View style={[styles.bentoFuelCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                  <View style={styles.bentoFuelHeader}>
-                    <Ionicons name="water-outline" size={18} color={colors.textSecondary} />
-                    <Text style={[styles.fuelUsageTitle, { color: colors.textPrimary }]}>{t('home.yourFuelUsage')}</Text>
+              {/* Row 4: Daily Fuel Usage (full width like HTML efficiency tip) */}
+              <SlideInView direction="up" duration={400} delay={240}>
+                <View style={[styles.fuelRowCard, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
+                  <View style={[styles.fuelRowIcon, { backgroundColor: colors.accentPetrol }]}>
+                    <Ionicons name="water" size={20} color={colors.textWhite} />
                   </View>
-                  <View style={styles.bentoFuelGrid}>
-                    <View style={styles.bentoFuelItem}>
-                      <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.dailyUsage')}</Text>
-                      <View style={styles.fuelInputRow}>
-                        <TextInput
-                          style={[styles.fuelInput, { backgroundColor: colors.bg, borderColor: colors.borderInput, color: colors.textPrimary }]}
-                          value={fuelLiters}
-                          onChangeText={setFuelLiters}
-                          keyboardType="numeric"
-                          placeholder="0"
-                          placeholderTextColor={colors.textMuted}
-                        />
-                        <Text style={[styles.fuelInputUnit, { color: colors.textMuted }]}>L</Text>
-                      </View>
-                    </View>
-                    <View style={styles.bentoFuelItem}>
-                      <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.estDriven')}</Text>
-                      <Text style={[styles.bentoFuelValue, { color: colors.textPrimary }]}>{kmDriven || dailyEstKm} km</Text>
-                    </View>
-                    <View style={styles.bentoFuelItem}>
-                      <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.weeklyCost')}</Text>
-                      <Text style={[styles.bentoFuelValue, { color: colors.riskHigh }]}>Rs {weeklyFuelCost.toFixed(0)}</Text>
-                    </View>
-                    <View style={styles.bentoFuelItem}>
-                      <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.lastRefill')}</Text>
-                      <Text style={[styles.bentoFuelValue, { color: colors.textPrimary }]}>{lastRefill ? formatDate(lastRefill) : '\u2014'}</Text>
-                    </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.bentoCardLabel, { color: colors.accentPetrol, textTransform: 'uppercase', fontSize: 10 }]}>Daily Fuel</Text>
+                    <Text style={[styles.bentoCardSubtext, { color: colors.textSecondary, fontStyle: 'italic' }]}>Enter your daily consumption to track costs.</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TextInput
+                      style={[styles.fuelRowInput, { backgroundColor: colors.bg, borderColor: colors.borderInput, color: colors.textPrimary }]}
+                      value={fuelLiters}
+                      onChangeText={setFuelLiters}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={colors.textMuted}
+                    />
+                    <Text style={[styles.fuelRowUnit, { color: colors.textMuted }]}>L</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end', borderLeftWidth: 1, borderLeftColor: colors.border, paddingLeft: 12 }}>
+                    <Text style={[styles.bentoCardLabel, { color: colors.accentPetrol, fontSize: 10 }]}>Est. /wk</Text>
+                    <Text style={[styles.fuelRowAmount, { color: colors.accentPetrol }]}>Rs {weeklyFuelCost.toFixed(0)}</Text>
                   </View>
                 </View>
               </SlideInView>
 
-              {data.global_crude?.brent_usd && (
-                <SlideInView direction="up" duration={400} delay={300}>
-                  <View style={[styles.bentoCrudeCard, { backgroundColor: colors.crudeBg, borderColor: colors.crudeDivider }]}>
-                    <View style={styles.bentoCrudeHeader}>
-                      <Ionicons name="globe-outline" size={16} color={colors.crudeText} />
-                      <Text style={[styles.bentoCrudeTitle, { color: colors.crudeText }]}> {t('home.globalCrude')}</Text>
-                    </View>
-                    <View style={styles.bentoCrudeRow}>
-                      <View style={styles.bentoCrudeItem}>
-                        <Text style={[styles.crudeLabel, { color: colors.crudeLabel }]}>Brent</Text>
-                        <Text style={[styles.crudeValue, { color: colors.crudeValue }]}>${data.global_crude.brent_usd.toFixed(2)}</Text>
-                      </View>
-                      <View style={[styles.bentoCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
-                      <View style={styles.bentoCrudeItem}>
-                        <Text style={[styles.crudeLabel, { color: colors.crudeLabel }]}>WTI</Text>
-                        <Text style={[styles.crudeValue, { color: colors.crudeValue }]}>${data.global_crude.wti_usd?.toFixed(2)}</Text>
-                      </View>
-                      <View style={[styles.bentoCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
-                      <View style={styles.bentoCrudeItem}>
-                        <Text style={[styles.crudeLabel, { color: colors.crudeLabel }]}>Diesel</Text>
-                        <Text style={[styles.crudeValue, { color: colors.crudeValue }]}>${data.global_crude.diesel_global_usd?.toFixed(2)}</Text>
-                      </View>
-                      <View style={[styles.bentoCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
-                      <View style={styles.bentoCrudeItem}>
-                        <Text style={[styles.crudeLabel, { color: colors.crudeLabel }]}>Gasoline</Text>
-                        <Text style={[styles.crudeValue, { color: colors.crudeValue }]}>${data.global_crude.gasoline_global_usd?.toFixed(2)}</Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.bentoCrudeSource, { color: colors.crudeSource }]}>via {data.global_crude.source}</Text>
+              {/* Row 5: Efficiency Tip (full width) */}
+              <SlideInView direction="up" duration={400} delay={320}>
+                <View style={[styles.fuelRowCard, { backgroundColor: colors.bgSurface, borderWidth: 0 }]}>
+                  <View style={[styles.fuelRowIcon, { backgroundColor: colors.accentPetrol }]}>
+                    <Ionicons name="leaf" size={20} color={colors.textWhite} />
                   </View>
-                </SlideInView>
-              )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.bentoCardLabel, { color: colors.accentPetrol, textTransform: 'uppercase', fontSize: 10 }]}>Efficiency Tip</Text>
+                    <Text style={[styles.bentoCardSubtext, { color: colors.textSecondary, fontStyle: 'italic' }]}>Smooth braking can save up to 15% on fuel annually.</Text>
+                  </View>
+                  <View style={{ borderLeftWidth: 1, borderLeftColor: colors.border, paddingLeft: 12 }}>
+                    <Text style={[styles.bentoCardLabel, { color: colors.accentPetrol, fontSize: 10 }]}>Est. Monthly</Text>
+                    <Text style={[styles.fuelRowAmount, { color: colors.accentPetrol }]}>Rs {(weeklyFuelCost * 0.15 * 4).toFixed(0)}</Text>
+                  </View>
+                </View>
+              </SlideInView>
             </StaggerContainer>
           </>
         ) : null}
@@ -378,7 +351,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1},
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, height: 56,
@@ -392,50 +365,19 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 32, gap: 28 },
   bannerCard: {
-    borderRadius: 10, flexDirection: 'row',
+    borderRadius: 12, flexDirection: 'row',
     overflow: 'hidden', borderWidth: 1,
   },
   bannerAccent: { width: 5 },
-  bannerContent: { flex: 1, padding: 14, gap: 4 },
+  bannerContent: { flex: 1, padding: 18, gap: 6 },
   bannerLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   bannerTitle: { fontSize: 15, fontWeight: '700' },
   bannerText: { fontSize: 13, lineHeight: 18 },
   priceCard: {
-    borderRadius: 10,
-    borderWidth: 1, padding: 16, gap: 6,
+    borderRadius: 12,
+    borderWidth: 1, padding: 20, gap: 8,
   },
-  priceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  priceBody: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  priceLabel: { fontSize: 12, fontWeight: '600' },
-  trendRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  priceValue: { fontSize: 20, fontWeight: '700' },
   priceUnit: { fontSize: 11, fontWeight: '400' },
-  priceSub: { fontSize: 10, marginTop: -2 },
-  fuelUsageCard: {
-    borderRadius: 12, borderWidth: 1,
-    padding: 16, gap: 12,
-  },
-  fuelUsageTitle: { fontSize: 14, fontWeight: '700' },
-  fuelUsageGrid: { flexDirection: 'row', gap: 8 },
-  fuelUsageItem: { flex: 1, alignItems: 'center', gap: 2 },
-  fuelUsageLabel: { fontSize: 9, fontWeight: '600', textTransform: 'uppercase' },
-  fuelUsageValue: { fontSize: 14, fontWeight: '700' },
-  fuelInputRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  fuelInput: {
-    width: 60, height: 42, borderWidth: 1, borderRadius: 6,
-    paddingHorizontal: 8, fontSize: 14, textAlign: 'center',
-  },
-  fuelInputUnit: { fontSize: 12 },
-  metricsRow: { flexDirection: 'row', gap: 10 },
-  metricCard: {
-    flex: 1, borderRadius: 10,
-    borderWidth: 1, padding: 14, gap: 6,
-  },
-  metricLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase' },
-  metricBarTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  metricBarFill: { height: '100%', borderRadius: 3 },
-  metricValue: { fontSize: 16, fontWeight: '700' },
-  metricSub: { fontSize: 10 },
   badge: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
@@ -447,62 +389,51 @@ const styles = StyleSheet.create({
   },
   errorText: { fontSize: 13, flex: 1 },
   retryText: { fontSize: 12, fontWeight: '600', marginLeft: 8 },
-  globalCrudeCard: {
-    borderRadius: 12, padding: 16, gap: 12,
-    borderWidth: 1,
-  },
-  globalCrudeHeader: { flexDirection: 'row', alignItems: 'center' },
-  globalCrudeTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  globalCrudeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
-  globalCrudeItem: { alignItems: 'center', gap: 2 },
-  globalCrudeLabel: { fontSize: 11, fontWeight: '600' },
-  globalCrudeValue: { fontSize: 20, fontWeight: '800' },
-  globalCrudeDivider: { width: 1, height: 24 },
-  globalCrudeSource: { fontSize: 10, textAlign: 'center' },
 
-  // Bento-specific styles
-  bentoPriceCard: {
-    borderRadius: 16, borderWidth: 1,
-    padding: 20, gap: 12,
+  // New bento styles
+  recFullCard: {
+    borderRadius: 14, padding: 20,
+    flexDirection: 'column', gap: 8,
+    overflow: 'hidden', position: 'relative',
+    shadowRadius: 20, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 0 }, elevation: 8,
   },
-  bentoPriceTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bentoPriceLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  bentoPriceValue: { fontSize: 24, fontWeight: '800', lineHeight: 30 },
-  bentoPriceFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  bentoPriceTrend: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
-  },
-  bentoRecWrapper: { flex: 1, borderRadius: 14, overflow: 'hidden' },
-  bentoRecCard: {
-    borderRadius: 14, borderWidth: 1,
-    padding: 16, gap: 6,
-  },
-  bentoRecTitle: { fontSize: 14, fontWeight: '700' },
-  bentoRecText: { fontSize: 12, lineHeight: 17 },
-  bentoMiniCard: {
+  recFullGlow: { position: 'absolute', right: -16, top: -16 },
+  recFullLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, opacity: 0.8 },
+  recFullTitle: { fontSize: 24, fontWeight: '700', lineHeight: 30 },
+  recFullText: { fontSize: 14, lineHeight: 20, maxWidth: '90%' },
+  bentoCard: {
     borderRadius: 12, borderWidth: 1,
-    padding: 12, gap: 6,
+    padding: 16, gap: 8,
   },
-  bentoMiniValue: { fontSize: 14, fontWeight: '700', textAlign: 'right' },
-  bentoFuelCard: {
-    borderRadius: 16, borderWidth: 1,
-    padding: 18, gap: 14,
+  bentoCardLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  bentoCardPrice: { fontSize: 20, fontWeight: '700', lineHeight: 26 },
+  bentoCardBadge: {
+    alignSelf: 'flex-start', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 999,
   },
-  bentoFuelHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bentoFuelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  bentoFuelItem: { flex: 1, minWidth: 100, gap: 4 },
-  bentoFuelValue: { fontSize: 16, fontWeight: '700' },
-  bentoCrudeCard: {
-    borderRadius: 16, padding: 18, gap: 12,
-    borderWidth: 1,
+  bentoCardBadgeText: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase' },
+  riskBadge: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  bentoRiskValue: { fontSize: 18, fontWeight: '700' },
+  miniChart: {
+    height: 32, width: '100%',
+    flexDirection: 'row', alignItems: 'flex-end', gap: 3, marginTop: 8, opacity: 0.6,
   },
-  bentoCrudeHeader: { flexDirection: 'row', alignItems: 'center' },
-  bentoCrudeTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  bentoCrudeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
-  bentoCrudeItem: { alignItems: 'center', gap: 2, flex: 1 },
-  bentoCrudeDivider: { width: 1, height: 28 },
-  bentoCrudeSource: { fontSize: 10, textAlign: 'center' },
-  crudeLabel: { fontSize: 11, fontWeight: '600' },
-  crudeValue: { fontSize: 20, fontWeight: '800' },
+  miniChartBar: { flex: 1, borderRadius: 2 },
+  bentoCardSubtext: { fontSize: 10, lineHeight: 14, marginTop: 6 },
+  bentoCycleDay: { fontSize: 18, fontWeight: '700' },
+  bentoCrudePrice: { fontSize: 18, fontWeight: '700' },
+  bentoCrudeChange: { fontSize: 10, fontWeight: '700' },
+  fuelRowCard: {
+    borderRadius: 12, borderWidth: 1, padding: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  fuelRowIcon: {
+    width: 40, height: 40, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  fuelRowInput: {
+    width: 52, height: 38, borderWidth: 1, borderRadius: 6,
+    paddingHorizontal: 6, fontSize: 14, textAlign: 'center',
+  },
+  fuelRowUnit: { fontSize: 12, fontWeight: '500' },
+  fuelRowAmount: { fontSize: 16, fontWeight: '700' },
 });
