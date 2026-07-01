@@ -206,47 +206,28 @@ export default function HomeScreen() {
 
             <StaggerContainer staggerDelay={100} direction="up" duration={350}>
               <SlideInView direction="up" duration={400}>
-                <ColorPopView variant="primary" position="left" thickness={5}>
-                  <View style={[styles.bannerCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
-                    <View style={[styles.bannerAccent, { backgroundColor: colors.accentPetrol }]} />
-                    <View style={styles.bannerContent}>
-                      <Text style={[styles.bannerLabel, { color: colors.accentPetrol }]}>{t('home.recommendation')}</Text>
-                      <Text style={[styles.bannerTitle, { color: colors.textPrimary }]}>{data.recommendation.title}</Text>
-                      <Text style={[styles.bannerText, { color: colors.textSecondary }]}>{data.recommendation.content}</Text>
-                    </View>
-                  </View>
-                </ColorPopView>
-              </SlideInView>
-
-              <SlideInView direction="up" duration={400} delay={100}>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 14 }}>
                   {showPetrol && (
-                    <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentPetrol, borderTopWidth: 3, flex: showDiesel ? 1 : undefined }]}>
-                      <View style={styles.priceHeader}>
-                        <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{t('common.petrol')}</Text>
-                        <View style={styles.trendRow}>
-                          {data.trend.petrol === 'up' ? (
-                            <Ionicons name="arrow-up" size={13} color={colors.trendUp} />
-                          ) : (
-                            <Ionicons name="arrow-down" size={13} color={colors.trendDown} />
-                          )}
-                          <Text style={[data.trend.petrol === 'up' ? { color: colors.trendUp } : { color: colors.trendDown }, { fontSize: 12, fontWeight: '600' }]}>
+                    <View style={[styles.bentoPriceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentPetrol, borderTopWidth: 3, flex: showDiesel ? 1 : undefined }]}>
+                      <View style={styles.bentoPriceTop}>
+                        <MaterialCommunityIcons name="gas-station-outline" size={20} color={colors.accentPetrol} />
+                        <Text style={[styles.bentoPriceLabel, { color: colors.textMuted }]}>{t('common.petrol')}</Text>
+                      </View>
+                      <Text style={[styles.bentoPriceValue, { color: colors.textPrimary }]}>
+                        Rs {data.current_price.petrol.toFixed(2)}
+                        <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
+                      </Text>
+                      <View style={styles.bentoPriceFooter}>
+                        <View style={[styles.bentoPriceTrend, { backgroundColor: data.trend.petrol === 'up' ? colors.trendUp + '20' : colors.trendDown + '20' }]}>
+                          <Ionicons name={data.trend.petrol === 'up' ? 'arrow-up' : 'arrow-down'} size={12} color={data.trend.petrol === 'up' ? colors.trendUp : colors.trendDown} />
+                          <Text style={[{ color: data.trend.petrol === 'up' ? colors.trendUp : colors.trendDown, fontSize: 11, fontWeight: '600' }]}>
                             {data.trend.petrol_change}%
                           </Text>
                         </View>
-                      </View>
-                      <View style={styles.priceBody}>
-                        <View>
-                          <Text style={[styles.priceValue, { color: colors.textPrimary }]}>
-                            Rs {data.current_price.petrol.toFixed(2)}
-                            <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
-                          </Text>
-                          <Text style={[styles.priceSub, { color: colors.textMuted }]}>{t('common.perLitre')}</Text>
-                        </View>
                         <Sparkline
                           data={makeSparklineSmooth(data.current_price.petrol, data.trend.petrol, data.trend.petrol_change)}
-                          width={70}
-                          height={36}
+                          width={60}
+                          height={28}
                           color={colors.accentPetrol}
                           strokeWidth={2}
                         />
@@ -254,32 +235,26 @@ export default function HomeScreen() {
                     </View>
                   )}
                   {showDiesel && (
-                    <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentDiesel, borderTopWidth: 3, flex: showPetrol ? 1 : undefined }]}>
-                      <View style={styles.priceHeader}>
-                        <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{t('common.diesel')}</Text>
-                        <View style={styles.trendRow}>
-                          {data.trend.diesel === 'up' ? (
-                            <Ionicons name="arrow-up" size={13} color={colors.trendUp} />
-                          ) : (
-                            <Ionicons name="arrow-down" size={13} color={colors.trendDown} />
-                          )}
-                          <Text style={[data.trend.diesel === 'up' ? { color: colors.trendUp } : { color: colors.trendDown }, { fontSize: 12, fontWeight: '600' }]}>
+                    <View style={[styles.bentoPriceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentDiesel, borderTopWidth: 3, flex: showPetrol ? 1 : undefined }]}>
+                      <View style={styles.bentoPriceTop}>
+                        <MaterialCommunityIcons name="engine-outline" size={20} color={colors.accentDiesel} />
+                        <Text style={[styles.bentoPriceLabel, { color: colors.textMuted }]}>{t('common.diesel')}</Text>
+                      </View>
+                      <Text style={[styles.bentoPriceValue, { color: colors.textPrimary }]}>
+                        Rs {data.current_price.diesel.toFixed(2)}
+                        <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
+                      </Text>
+                      <View style={styles.bentoPriceFooter}>
+                        <View style={[styles.bentoPriceTrend, { backgroundColor: data.trend.diesel === 'up' ? colors.trendUp + '20' : colors.trendDown + '20' }]}>
+                          <Ionicons name={data.trend.diesel === 'up' ? 'arrow-up' : 'arrow-down'} size={12} color={data.trend.diesel === 'up' ? colors.trendUp : colors.trendDown} />
+                          <Text style={[{ color: data.trend.diesel === 'up' ? colors.trendUp : colors.trendDown, fontSize: 11, fontWeight: '600' }]}>
                             {data.trend.diesel_change}%
                           </Text>
                         </View>
-                      </View>
-                      <View style={styles.priceBody}>
-                        <View>
-                          <Text style={[styles.priceValue, { color: colors.textPrimary }]}>
-                            Rs {data.current_price.diesel.toFixed(2)}
-                            <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
-                          </Text>
-                          <Text style={[styles.priceSub, { color: colors.textMuted }]}>{t('common.perLitre')}</Text>
-                        </View>
                         <Sparkline
                           data={makeSparklineSmooth(data.current_price.diesel, data.trend.diesel, data.trend.diesel_change)}
-                          width={70}
-                          height={36}
+                          width={60}
+                          height={28}
                           color={colors.accentDiesel}
                           strokeWidth={2}
                         />
@@ -289,11 +264,42 @@ export default function HomeScreen() {
                 </View>
               </SlideInView>
 
+              <SlideInView direction="up" duration={400} delay={100}>
+                <View style={{ flexDirection: 'row', gap: 14 }}>
+                  <ColorPopView variant="primary" position="left" thickness={4} style={styles.bentoRecWrapper}>
+                    <View style={[styles.bentoRecCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
+                      <Text style={[styles.bannerLabel, { color: colors.accentPetrol }]}>{t('home.recommendation')}</Text>
+                      <Text style={[styles.bentoRecTitle, { color: colors.textPrimary }]} numberOfLines={1}>{data.recommendation.title}</Text>
+                      <Text style={[styles.bentoRecText, { color: colors.textSecondary }]} numberOfLines={2}>{data.recommendation.content}</Text>
+                    </View>
+                  </ColorPopView>
+                  <View style={{ flex: 1, gap: 14 }}>
+                    <GlowEffect variant={data.risk_level === 'High' ? 'danger' : 'warning'} size={2} duration={3000}>
+                      <View style={[styles.bentoMiniCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                        <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.fuelRisk')}</Text>
+                        <AnimatedBar percentage={riskPct} color={(colors as any)[`risk${data.risk_level}`] || colors.riskModerate} trackColor={colors.barTrack} height={5} borderRadius={3} duration={700} />
+                        <Text style={[styles.bentoMiniValue, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>{data.risk_level}</Text>
+                      </View>
+                    </GlowEffect>
+                    <GlowEffect variant={impactPct > 50 ? 'danger' : 'warning'} size={2} duration={3000}>
+                      <View style={[styles.bentoMiniCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                        <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.businessImpact')}</Text>
+                        <AnimatedBar percentage={impactPct} color={impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow} trackColor={colors.barTrack} height={5} borderRadius={3} duration={700} />
+                        <Text style={[styles.bentoMiniValue, { color: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]}>{data.impact_score}</Text>
+                      </View>
+                    </GlowEffect>
+                  </View>
+                </View>
+              </SlideInView>
+
               <SlideInView direction="up" duration={400} delay={200}>
-                <View style={[styles.fuelUsageCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                  <Text style={[styles.fuelUsageTitle, { color: colors.textPrimary }]}>{t('home.yourFuelUsage')}</Text>
-                  <View style={styles.fuelUsageGrid}>
-                    <View style={styles.fuelUsageItem}>
+                <View style={[styles.bentoFuelCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                  <View style={styles.bentoFuelHeader}>
+                    <Ionicons name="water-outline" size={18} color={colors.textSecondary} />
+                    <Text style={[styles.fuelUsageTitle, { color: colors.textPrimary }]}>{t('home.yourFuelUsage')}</Text>
+                  </View>
+                  <View style={styles.bentoFuelGrid}>
+                    <View style={styles.bentoFuelItem}>
                       <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.dailyUsage')}</Text>
                       <View style={styles.fuelInputRow}>
                         <TextInput
@@ -301,99 +307,57 @@ export default function HomeScreen() {
                           value={fuelLiters}
                           onChangeText={setFuelLiters}
                           keyboardType="numeric"
-                          placeholder={t('home.dailyPlaceholder')}
+                          placeholder="0"
                           placeholderTextColor={colors.textMuted}
                         />
-                        <Text style={[styles.fuelInputUnit, { color: colors.textMuted }]}>{t('common.litre')}</Text>
+                        <Text style={[styles.fuelInputUnit, { color: colors.textMuted }]}>L</Text>
                       </View>
                     </View>
-                    <View style={styles.fuelUsageItem}>
+                    <View style={styles.bentoFuelItem}>
                       <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.estDriven')}</Text>
-                      <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>{kmDriven || dailyEstKm} km/day</Text>
+                      <Text style={[styles.bentoFuelValue, { color: colors.textPrimary }]}>{kmDriven || dailyEstKm} km</Text>
                     </View>
-                    <View style={styles.fuelUsageItem}>
+                    <View style={styles.bentoFuelItem}>
                       <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.weeklyCost')}</Text>
-                      <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>Rs {weeklyFuelCost.toFixed(0)}</Text>
+                      <Text style={[styles.bentoFuelValue, { color: colors.riskHigh }]}>Rs {weeklyFuelCost.toFixed(0)}</Text>
                     </View>
-                    <View style={styles.fuelUsageItem}>
+                    <View style={styles.bentoFuelItem}>
                       <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.lastRefill')}</Text>
-                      <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>{lastRefill ? formatDate(lastRefill) : '\u2014'}</Text>
+                      <Text style={[styles.bentoFuelValue, { color: colors.textPrimary }]}>{lastRefill ? formatDate(lastRefill) : '\u2014'}</Text>
                     </View>
                   </View>
                 </View>
               </SlideInView>
 
-              <SlideInView direction="up" duration={400} delay={300}>
-                <View style={styles.metricsRow}>
-                  <GlowEffect
-                    variant={data.risk_level === 'High' ? 'danger' : data.risk_level === 'Moderate' ? 'warning' : 'success'}
-                    size={3}
-                    duration={3000}
-                  >
-                    <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.fuelRisk')}</Text>
-                      <AnimatedBar
-                        percentage={riskPct}
-                        color={(colors as any)[`risk${data.risk_level}`] || colors.riskModerate}
-                        trackColor={colors.barTrack}
-                        height={6}
-                        borderRadius={3}
-                        duration={700}
-                      />
-                      <Text style={[styles.metricValue, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>
-                        {data.risk_level} &middot; {riskPct.toFixed(0)}%
-                      </Text>
-                      <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.basedOnTrend')}</Text>
-                    </View>
-                  </GlowEffect>
-                  <GlowEffect
-                    variant={impactPct > 50 ? 'danger' : impactPct > 25 ? 'warning' : 'success'}
-                    size={3}
-                    duration={3000}
-                  >
-                    <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.businessImpact')}</Text>
-                      <AnimatedBar
-                        percentage={impactPct}
-                        color={impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow}
-                        trackColor={colors.barTrack}
-                        height={6}
-                        borderRadius={3}
-                        duration={700}
-                      />
-                      <Text style={[styles.metricValue, { color: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]}>
-                        {data.impact_score} &middot; {impactPct.toFixed(0)}%
-                      </Text>
-                      <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.weeklySpend', { amount: weeklyFuelCost.toFixed(0) })}</Text>
-                    </View>
-                  </GlowEffect>
-                </View>
-              </SlideInView>
-
               {data.global_crude?.brent_usd && (
-                <SlideInView direction="up" duration={400} delay={400}>
-                  <View style={[styles.globalCrudeCard, { backgroundColor: colors.crudeBg, borderColor: colors.crudeDivider }]}>
-                    <View style={styles.globalCrudeHeader}>
+                <SlideInView direction="up" duration={400} delay={300}>
+                  <View style={[styles.bentoCrudeCard, { backgroundColor: colors.crudeBg, borderColor: colors.crudeDivider }]}>
+                    <View style={styles.bentoCrudeHeader}>
                       <Ionicons name="globe-outline" size={16} color={colors.crudeText} />
-                      <Text style={[styles.globalCrudeTitle, { color: colors.crudeText }]}> {t('home.globalCrude')}</Text>
+                      <Text style={[styles.bentoCrudeTitle, { color: colors.crudeText }]}> {t('home.globalCrude')}</Text>
                     </View>
-                    <View style={styles.globalCrudeRow}>
-                      <View style={styles.globalCrudeItem}>
-                        <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>Brent</Text>
-                        <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.brent_usd.toFixed(2)}</Text>
+                    <View style={styles.bentoCrudeRow}>
+                      <View style={styles.bentoCrudeItem}>
+                        <Text style={[styles.crudeLabel, { color: colors.crudeLabel }]}>Brent</Text>
+                        <Text style={[styles.crudeValue, { color: colors.crudeValue }]}>${data.global_crude.brent_usd.toFixed(2)}</Text>
                       </View>
-                      <View style={[styles.globalCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
-                      <View style={styles.globalCrudeItem}>
-                        <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>WTI</Text>
-                        <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.wti_usd?.toFixed(2)}</Text>
+                      <View style={[styles.bentoCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
+                      <View style={styles.bentoCrudeItem}>
+                        <Text style={[styles.crudeLabel, { color: colors.crudeLabel }]}>WTI</Text>
+                        <Text style={[styles.crudeValue, { color: colors.crudeValue }]}>${data.global_crude.wti_usd?.toFixed(2)}</Text>
                       </View>
-                      <View style={[styles.globalCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
-                      <View style={styles.globalCrudeItem}>
-                        <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>Gasoline</Text>
-                        <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.gasoline_global_usd?.toFixed(2)}</Text>
+                      <View style={[styles.bentoCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
+                      <View style={styles.bentoCrudeItem}>
+                        <Text style={[styles.crudeLabel, { color: colors.crudeLabel }]}>Diesel</Text>
+                        <Text style={[styles.crudeValue, { color: colors.crudeValue }]}>${data.global_crude.diesel_global_usd?.toFixed(2)}</Text>
+                      </View>
+                      <View style={[styles.bentoCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
+                      <View style={styles.bentoCrudeItem}>
+                        <Text style={[styles.crudeLabel, { color: colors.crudeLabel }]}>Gasoline</Text>
+                        <Text style={[styles.crudeValue, { color: colors.crudeValue }]}>${data.global_crude.gasoline_global_usd?.toFixed(2)}</Text>
                       </View>
                     </View>
-                    <Text style={[styles.globalCrudeSource, { color: colors.crudeSource }]}>via {data.global_crude.source}</Text>
+                    <Text style={[styles.bentoCrudeSource, { color: colors.crudeSource }]}>via {data.global_crude.source}</Text>
                   </View>
                 </SlideInView>
               )}
@@ -419,7 +383,7 @@ const styles = StyleSheet.create({
   avatarPlaceholder: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   avatarLetter: { fontSize: 16, fontWeight: '700' },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 32, gap: 20 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 32, gap: 28 },
   bannerCard: {
     borderRadius: 10, flexDirection: 'row',
     overflow: 'hidden', borderWidth: 1,
@@ -488,4 +452,50 @@ const styles = StyleSheet.create({
   globalCrudeValue: { fontSize: 20, fontWeight: '800' },
   globalCrudeDivider: { width: 1, height: 24 },
   globalCrudeSource: { fontSize: 10, textAlign: 'center' },
+
+  // Bento-specific styles
+  bentoPriceCard: {
+    borderRadius: 16, borderWidth: 1,
+    padding: 20, gap: 12,
+  },
+  bentoPriceTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bentoPriceLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  bentoPriceValue: { fontSize: 24, fontWeight: '800', lineHeight: 30 },
+  bentoPriceFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  bentoPriceTrend: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
+  },
+  bentoRecWrapper: { flex: 1, borderRadius: 14, overflow: 'hidden' },
+  bentoRecCard: {
+    borderRadius: 14, borderWidth: 1,
+    padding: 16, gap: 6,
+  },
+  bentoRecTitle: { fontSize: 14, fontWeight: '700' },
+  bentoRecText: { fontSize: 12, lineHeight: 17 },
+  bentoMiniCard: {
+    borderRadius: 12, borderWidth: 1,
+    padding: 12, gap: 6,
+  },
+  bentoMiniValue: { fontSize: 14, fontWeight: '700', textAlign: 'right' },
+  bentoFuelCard: {
+    borderRadius: 16, borderWidth: 1,
+    padding: 18, gap: 14,
+  },
+  bentoFuelHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bentoFuelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  bentoFuelItem: { flex: 1, minWidth: 100, gap: 4 },
+  bentoFuelValue: { fontSize: 16, fontWeight: '700' },
+  bentoCrudeCard: {
+    borderRadius: 16, padding: 18, gap: 12,
+    borderWidth: 1,
+  },
+  bentoCrudeHeader: { flexDirection: 'row', alignItems: 'center' },
+  bentoCrudeTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  bentoCrudeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
+  bentoCrudeItem: { alignItems: 'center', gap: 2, flex: 1 },
+  bentoCrudeDivider: { width: 1, height: 28 },
+  bentoCrudeSource: { fontSize: 10, textAlign: 'center' },
+  crudeLabel: { fontSize: 11, fontWeight: '600' },
+  crudeValue: { fontSize: 20, fontWeight: '800' },
 });

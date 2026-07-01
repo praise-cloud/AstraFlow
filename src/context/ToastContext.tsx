@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, PanResponder } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   BounceInDown,
@@ -10,7 +10,6 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColor } from '@/hooks/useAppColor';
 import { useHaptic } from '@/hooks/useHaptic';
@@ -109,51 +108,51 @@ function ToastItem({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
     if (soundFn) (soundFn as () => Promise<void>)();
   }, []);
 
-  const swipeGesture = Gesture.Pan()
-    .onUpdate((e) => {
-      if (e.translationX > 0) {
-        translateX.value = e.translationX;
-      }
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dx) > 10 && gs.dx > 0,
+      onPanResponderMove: (_, gs) => {
+        translateX.value = Math.max(0, gs.dx);
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dx > 100) {
+          onDismiss();
+        } else {
+          translateX.value = withTiming(0, { duration: 200 });
+        }
+      },
     })
-    .onEnd((e) => {
-      if (e.translationX > 100) {
-        onDismiss();
-      } else {
-        translateX.value = withTiming(0, { duration: 200 });
-      }
-    });
+  ).current;
 
   const swipeStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
 
   return (
-    <GestureDetector gesture={swipeGesture}>
-      <Animated.View style={[styles.toastCard, { backgroundColor: colors.bgCard, shadowColor: colors.shadow }, swipeStyle]}>
-        <View style={[styles.toastAccent, { backgroundColor: accentColor }]} />
+    <Animated.View style={[styles.toastCard, { backgroundColor: colors.bgCard, shadowColor: colors.shadow }, swipeStyle]} {...panResponder.panHandlers}>
+      <View style={[styles.toastAccent, { backgroundColor: accentColor }]} />
 
-        <Animated.View entering={BounceIn.duration(400).springify()}>
-          <Ionicons name={iconName} size={22} color={accentColor} style={styles.toastIcon} />
-        </Animated.View>
-
-        <View style={styles.toastContent}>
-          {toast.title && (
-            <Text style={[styles.toastTitle, { color: colors.textPrimary }]} numberOfLines={1}>
-              {toast.title}
-            </Text>
-          )}
-          <Text style={[styles.toastMessage, { color: colors.textSecondary }]} numberOfLines={2}>
-            {toast.message}
-          </Text>
-        </View>
-
-        <TouchableOpacity onPress={onDismiss} style={styles.toastDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="close" size={18} color={colors.textMuted} />
-        </TouchableOpacity>
-
-        <ProgressBar duration={toast.duration || 3000} color={accentColor} />
+      <Animated.View entering={BounceIn.duration(400).springify()}>
+        <Ionicons name={iconName} size={22} color={accentColor} style={styles.toastIcon} />
       </Animated.View>
-    </GestureDetector>
+
+      <View style={styles.toastContent}>
+        {toast.title && (
+          <Text style={[styles.toastTitle, { color: colors.textPrimary }]} numberOfLines={1}>
+            {toast.title}
+          </Text>
+        )}
+        <Text style={[styles.toastMessage, { color: colors.textSecondary }]} numberOfLines={2}>
+          {toast.message}
+        </Text>
+      </View>
+
+      <TouchableOpacity onPress={onDismiss} style={styles.toastDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Ionicons name="close" size={18} color={colors.textMuted} />
+      </TouchableOpacity>
+
+      <ProgressBar duration={toast.duration || 3000} color={accentColor} />
+    </Animated.View>
   );
 }
 
