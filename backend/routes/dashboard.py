@@ -130,6 +130,20 @@ def _ensure_prices_scraped(db: Session):
 
     if stored > 0:
         _send_price_alerts(db, old_petrol, old_diesel)
+        # Resolve past predictions with actual prices
+        try:
+            from backend.ml.evaluator import resolve_predictions
+            resolved = resolve_predictions()
+            if resolved:
+                logger.info("Resolved %d predictions with new price data", resolved)
+        except Exception:
+            logger.warning("Failed to resolve predictions after scrape", exc_info=True)
+        # New price data → trigger background model retrain
+        try:
+            from backend.ml.trainer import retrain_if_due
+            retrain_if_due()
+        except Exception:
+            logger.warning("Failed to trigger model retrain after scrape", exc_info=True)
 
 
 def get_current_user(authorization: str = Header(...), db: Session = Depends(get_db)):

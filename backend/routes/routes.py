@@ -1,11 +1,16 @@
 import os
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from typing import Any
+from typing import Any, Optional
 import httpx
 
+from sqlalchemy.orm import Session
+from backend.db.database import SessionLocal, get_db
 from backend.routes.dashboard import get_current_user
 from backend.models.user import User
+from backend.models.fuel_price import FuelPrice
+from backend.models.route_log import RouteLog
 from backend.services.gas_station_service import find_stations_nearby, find_stations_along_route
 from backend.services.route_optimizer import rank_routes
 
@@ -77,10 +82,6 @@ def plan_route(
 
     traffic_data = _fetch_tomtom_traffic(orig_lat, orig_lng, dest_lat, dest_lng) if TOMTOM_API_KEY else []
 
-    from backend.db.database import SessionLocal
-    from backend.models.fuel_price import FuelPrice
-    from datetime import datetime, timezone, timedelta
-
     db = SessionLocal()
     try:
         recent = (
@@ -140,6 +141,69 @@ def gas_stations(
     user: User = Depends(get_current_user),
 ):
     return find_stations_nearby(lat, lng, radius)
+
+
+class LogRouteOutcome(BaseModel):
+    origin_lat: float
+    origin_lng: float
+    dest_lat: float
+    dest_lng: float
+    distance_km: float
+    duration_min: float
+    traffic_delay_min: Optional[float] = 0.0
+    fuel_type: str = "petrol"
+    fuel_price: Optional[float] = None
+    predicted_liters: Optional[float] = None
+    predicted_cost: Optional[float] = None
+    actual_liters: float
+    actual_cost: Optional[float] = None
+
+
+@router.post("/log-outcome")
+def log_route_outcome(
+    body: LogRouteOutcome,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Record the actual fuel consumption for a completed route.
+
+    This data is used to train the RouteCostPredictor, making the AI
+    score smarter over time.
+    """
+    now = datetime.now(timezone.utc)
+    log = RouteLog(
+        user_id=user.id,
+        origin_lat=body.origin_lat,
+        origin_lng=body.origin_lng,
+        dest_lat=body.dest_lat,
+        dest_lng=body.dest_lng,
+        distance_km=body.distance_km,
+        duration_min=body.duration_min,
+        traffic_delay_min=body.traffic_delay_min or 0.0,
+        time_of_day=now.hour,
+        day_of_week=now.weekday(),
+        fuel_type=body.fuel_type,
+        fuel_price=body.fuel_price,
+        predicted_liters=body.predicted_liters,
+        predicted_cost=body.predicted_cost,
+        actual_liters=body.actual_liters,
+        actual_cost=body.actual_cost,
+        completed_at=now,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+
+    # Trigger background retrain of route model
+    try:
+        from backend.ml.route_model import get_route_predictor
+        import threading
+        predictor = get_route_predictor()
+        threading.Thread(target=predictor.train, args=(db,), daemon=True).start()
+    except Exception:
+        pass
+
+    return {"id": log.id, "message": "Route outcome logged"}
 
 
 def _geocode_single(query: str) -> tuple[float, float]:

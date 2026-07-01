@@ -57,5 +57,8 @@ example
 # project artifacts
 *.db
 *.docx
+
+# serialised ML model binaries (regenerated on training)
+*.joblib
 supabase/
 .opencode/

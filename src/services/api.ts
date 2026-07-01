@@ -311,6 +311,81 @@ export const api = {
         operator: string;
         distance_km: number;
       }>>(`/routes/gas-stations?lat=${lat}&lng=${lng}&radius=${radius}`),
+
+    logOutcome: (data: {
+      origin_lat: number;
+      origin_lng: number;
+      dest_lat: number;
+      dest_lng: number;
+      distance_km: number;
+      duration_min: number;
+      traffic_delay_min?: number;
+      fuel_type?: string;
+      fuel_price?: number;
+      predicted_liters?: number;
+      predicted_cost?: number;
+      actual_liters: number;
+      actual_cost?: number;
+    }) =>
+      request<{ id: number; message: string }>('/routes/log-outcome', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  model: {
+    status: () =>
+      request<{
+        petrol: {
+          version: number | null;
+          metrics: { mae: number; rmse: number; r2: number } | null;
+          trained_at: string | null;
+          num_samples: number;
+        };
+        diesel: {
+          version: number | null;
+          metrics: { mae: number; rmse: number; r2: number } | null;
+          trained_at: string | null;
+          num_samples: number;
+        };
+      }>('/model/status'),
+
+    accuracy: (days: number = 30, modelType: string = 'petrol') =>
+      request<{
+        model_type: string;
+        days: number;
+        resolved: number;
+        total: number;
+        coverage_pct: number;
+        mae: number | null;
+        rmse: number | null;
+        mape: number | null;
+        bias: number | null;
+        within_5pct: number | null;
+      }>(`/model/accuracy?days=${days}&model_type=${modelType}`),
+
+    versions: (modelType: string = 'petrol') =>
+      request<{
+        model_type: string;
+        versions: Array<{
+          id: number;
+          version: number;
+          is_active: boolean;
+          trained_at: string | null;
+          trained_until: string | null;
+          num_samples: number | null;
+          metrics: { mae: number; rmse: number; r2: number } | null;
+        }>;
+      }>(`/model/versions?model_type=${modelType}`),
+
+    retrain: () =>
+      request<{ message: string; status: string }>('/model/retrain', { method: 'POST' }),
+
+    rollback: (version: number, modelType: string = 'petrol') =>
+      request<{ message: string; status: string }>(
+        `/model/rollback/${version}?model_type=${modelType}`,
+        { method: 'POST' }
+      ),
   },
 
   news: {

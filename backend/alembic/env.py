@@ -15,6 +15,9 @@ from backend.db.database import Base
 from backend.models.user import User
 from backend.models.fuel_price import FuelPrice
 from backend.models.recommendation import Recommendation
+from backend.models.model_registry import ModelRegistry
+from backend.models.route_log import RouteLog
+from backend.models.prediction_log import PredictionLog
 
 config = context.config
 
