@@ -200,23 +200,29 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
-          {editing ? (
-            <TextInput
-              style={[styles.editNameInput, { color: colors.textPrimary, borderBottomColor: colors.border }]}
-              value={editName}
-              onChangeText={setEditName}
-              placeholder="Full Name"
-              placeholderTextColor={colors.textMuted}
-            />
-          ) : (
-            <Text style={[styles.name, { color: colors.textPrimary }]}>{user?.full_name || t('profile.user')}</Text>
-          )}
+          <Text style={[styles.name, { color: colors.textPrimary }]}>{editing ? editName : (user?.full_name || t('profile.user'))}</Text>
           <Text style={[styles.email, { color: colors.textMuted }]}>{user?.email || ''}</Text>
         </View>
 
         {editing && (
-          <View style={[styles.editCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text style={[styles.editCardTitle, { color: colors.textSecondary }]}>{t('register.businessTypeLabel')}</Text>
+          <View style={[styles.infoCard, { backgroundColor: colors.bgCard, borderColor: colors.accentPetrol }]}>
+            <View style={styles.infoRow}>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('profile.fullName')}</Text>
+              <TextInput
+                style={[styles.editInlineInput, { color: colors.textPrimary, borderBottomColor: colors.border }]}
+                value={editName}
+                onChangeText={setEditName}
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
+            <View style={styles.infoRow}>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('profile.email')}</Text>
+              <Text style={[styles.infoValue, { color: colors.textMuted }]}>{user?.email || '\u2014'}</Text>
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
+            <Text style={[styles.editSectionTitle, { color: colors.textSecondary }]}>{t('register.businessTypeLabel')}</Text>
             <View style={styles.chipGrid}>
               {BUSINESS_TYPES.map((bt) => (
                 <TouchableOpacity
@@ -232,7 +238,8 @@ export default function ProfileScreen() {
               ))}
             </View>
 
-            <Text style={[styles.editCardTitle, { color: colors.textSecondary }]}>{t('register.fuelTypeLabel')}</Text>
+            <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
+            <Text style={[styles.editSectionTitle, { color: colors.textSecondary }]}>{t('register.fuelTypeLabel')}</Text>
             <View style={styles.chipGrid}>
               {FUEL_TYPES.map((ft) => (
                 <TouchableOpacity
@@ -248,17 +255,25 @@ export default function ProfileScreen() {
               ))}
             </View>
 
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.accentPetrol }, saving && { opacity: 0.7 }]}
-              onPress={saveProfile}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color={colors.textWhite} />
-              ) : (
-                <Text style={[styles.saveBtnText, { color: colors.textWhite }]}>Save Changes</Text>
-              )}
-            </TouchableOpacity>
+            <View style={styles.editActions}>
+              <TouchableOpacity
+                style={[styles.cancelBtn, { borderColor: colors.borderInput }]}
+                onPress={cancelEditing}
+              >
+                <Text style={[styles.cancelBtnText, { color: colors.textMuted }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.accentPetrol }, saving && { opacity: 0.7 }]}
+                onPress={saveProfile}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.textWhite} />
+                ) : (
+                  <Text style={[styles.saveBtnText, { color: colors.textWhite }]}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -452,21 +467,23 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: '#fff',
   },
   name: { fontSize: 20, fontWeight: '700' },
-  editNameInput: {
-    fontSize: 20, fontWeight: '700', textAlign: 'center',
-    borderBottomWidth: 1, paddingBottom: 4, minWidth: 200,
-  },
   email: { fontSize: 14 },
-  editCard: { borderRadius: 12, borderWidth: 1, padding: 20, gap: 16 },
-  editCardTitle: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  editInlineInput: {
+    fontSize: 14, fontWeight: '600', textAlign: 'right',
+    borderBottomWidth: 1, paddingVertical: 2, minWidth: 120, paddingHorizontal: 4,
+  },
+  editSectionTitle: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 },
+  editActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1,
   },
   chipLabel: { fontSize: 13, fontWeight: '500' },
-  saveBtn: { height: 48, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  saveBtnText: { fontSize: 16, fontWeight: '600' },
+  cancelBtn: { flex: 1, height: 44, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  cancelBtnText: { fontSize: 15, fontWeight: '600' },
+  saveBtn: { flex: 1, height: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  saveBtnText: { fontSize: 15, fontWeight: '600' },
   infoCard: { borderRadius: 12, borderWidth: 1, padding: 24, gap: 12 },
   infoTitle: { fontSize: 14, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
