@@ -1,6 +1,9 @@
+import logging
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from backend.models.user import User
 from backend.routes.dashboard import get_current_user
@@ -19,13 +22,43 @@ class CostProjection(BaseModel):
     savings_tip: Optional[str] = None
 
 
+def _fallback_forecast(days: int = 30, fuel_type: str = "petrol") -> dict:
+    return {
+        "fuel_type": fuel_type,
+        "current_price": 1.60,
+        "forecast_days": days,
+        "trend": "stable",
+        "change_pct": 0.0,
+        "avg_forecast": 1.60,
+        "min_forecast": 1.60,
+        "max_forecast": 1.60,
+        "confidence_interval": {"lower": 1.55, "upper": 1.65},
+        "points": [],
+        "recommendation": {
+            "action": "monitor",
+            "title": "Data Unavailable",
+            "message": "Forecast model is still loading. Please try again shortly.",
+            "urgency": "none",
+        },
+        "model": "Fallback",
+        "evaluation": {"mae": 0, "rmse": 0, "r2": 0},
+    }
+
+
+_FALLBACK_CURRENT_PRICE = 1.60
+
+
 @router.get("/predict")
 def predict(
     liters: float = Query(..., gt=0),
     user: User = Depends(get_current_user),
 ):
-    forecaster = get_forecaster()
-    forecast = forecaster.forecast(days=30, fuel_type="petrol")
+    try:
+        forecaster = get_forecaster()
+        forecast = forecaster.forecast(days=30, fuel_type="petrol")
+    except Exception:
+        logger.exception("Predict: forecast failed, using fallback")
+        forecast = _fallback_forecast(30, "petrol")
 
     current = forecast["current_price"]
     avg_future = forecast["avg_forecast"]
@@ -63,5 +96,9 @@ def get_forecast(
     fuel_type: str = Query(default="petrol", pattern="^(petrol|diesel)$"),
     user: User = Depends(get_current_user),
 ):
-    forecaster = get_forecaster()
-    return forecaster.forecast(days=days, fuel_type=fuel_type)
+    try:
+        forecaster = get_forecaster()
+        return forecaster.forecast(days=days, fuel_type=fuel_type)
+    except Exception:
+        logger.exception("Forecast endpoint failed, returning fallback")
+        return _fallback_forecast(days, fuel_type)
