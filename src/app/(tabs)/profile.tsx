@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, Switch, TextInput, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, Switch, TextInput, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 
-import { getUserAsync, setUser, clearToken, UserData } from '@/services/auth';
+import type { UserData } from '@/services/auth';
+import { getUserAsync, setUser, clearToken } from '@/services/auth';
 import { api, avatarUrl } from '@/services/api';
 import { registerForPushNotifications, unregisterPushNotifications } from '@/services/notifications';
 import { useAppColor } from '@/hooks/useAppColor';
@@ -36,6 +37,8 @@ const BUSINESS_TYPES = [
   { id: 'logistics', labelKey: 'register.businessLogistics', icon: 'bus-outline' },
 ];
 
+type ModalType = 'fuel' | 'lang' | 'units' | null;
+
 export default function ProfileScreen() {
   const [user, setUserState] = useState<UserData | null>(null);
   const [editing, setEditing] = useState(false);
@@ -44,11 +47,14 @@ export default function ProfileScreen() {
   const [editBizType, setEditBizType] = useState('');
   const [editFuelType, setEditFuelType] = useState('');
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [weeklyInsights, setWeeklyInsights] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [minChangePct, setMinChangePct] = useState(2.0);
   const [alertOnPetrol, setAlertOnPetrol] = useState(true);
   const [alertOnDiesel, setAlertOnDiesel] = useState(true);
   const [currentLang, setCurrentLang] = useState<'en' | 'fr'>(getCurrentLanguage());
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [modalFuel, setModalFuel] = useState('');
   const colors = useAppColor();
   const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation();
@@ -64,6 +70,7 @@ export default function ProfileScreen() {
     api.notifications.preferences()
       .then(prefs => {
         setPushEnabled(prefs.push_enabled);
+        setWeeklyInsights((prefs as any).weekly_insights ?? false);
         setMinChangePct(prefs.min_change_pct ?? 2.0);
         setAlertOnPetrol(prefs.alert_on_petrol ?? true);
         setAlertOnDiesel(prefs.alert_on_diesel ?? true);
@@ -82,6 +89,7 @@ export default function ProfileScreen() {
   const handleLangChange = (lang: 'en' | 'fr') => {
     setCurrentLang(lang);
     changeLanguage(lang);
+    setActiveModal(null);
   };
 
   const handleTogglePush = async (value: boolean) => {
@@ -98,6 +106,11 @@ export default function ProfileScreen() {
     } finally {
       setToggling(false);
     }
+  };
+
+  const handleToggleInsights = (value: boolean) => {
+    setWeeklyInsights(value);
+    updatePrefs({ weekly_insights: value });
   };
 
   const handleLogout = () => {
@@ -157,7 +170,6 @@ export default function ProfileScreen() {
       quality: 0.8,
     });
     if (result.canceled || !result.assets[0]) return;
-
     try {
       const res = await api.profile.uploadAvatar(result.assets[0].uri);
       const updatedUser = { ...user!, avatar_url: res.avatar_url };
@@ -168,29 +180,59 @@ export default function ProfileScreen() {
     }
   };
 
+  const openFuelModal = () => {
+    setModalFuel(editing ? editFuelType : (user?.fuel_type || 'petrol'));
+    setActiveModal('fuel');
+  };
+
+  const confirmFuel = () => {
+    if (editing) {
+      setEditFuelType(modalFuel);
+    } else {
+      const updated = { ...user!, fuel_type: modalFuel };
+      setUserState(updated);
+      setUser(updated);
+      api.profile.update({ fuel_type: modalFuel }).catch(() => {});
+    }
+    setActiveModal(null);
+  };
+
+  const selectableItem = (items: { id: string; labelKey: string }[], selectedId: string, onSelect: (id: string) => void) => (
+    <View style={{ gap: 2 }}>
+      {items.map((item) => {
+        const isSelected = selectedId === item.id;
+        return (
+          <TouchableOpacity
+            key={item.id}
+            style={[styles.modalRow, isSelected && { backgroundColor: colors.bgPrimaryLight }]}
+            onPress={() => onSelect(item.id)}
+          >
+            <Text style={[styles.modalRowText, { color: colors.textPrimary }, isSelected && { color: colors.accentPetrol, fontWeight: '700' }]}>
+              {t(item.labelKey)}
+            </Text>
+            {isSelected && <Ionicons name="checkmark" size={20} color={colors.accentPetrol} />}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      <View style={[styles.header, { backgroundColor: colors.bg }]}>
-        <View style={styles.headerLeft}>
-          <MaterialCommunityIcons name="gas-station-outline" size={22} color={colors.accentPetrol} />
-          <Text style={[styles.headerTitle, { color: colors.accentPetrol }]}>{t('profile.header')}</Text>
-        </View>
-        {!editing ? (
-          <TouchableOpacity style={styles.editBtn} onPress={startEditing}>
-            <Ionicons name="create-outline" size={20} color={colors.accentPetrol} />
-            <Text style={[styles.editBtnText, { color: colors.accentPetrol }]}>Edit</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.editBtn} onPress={cancelEditing}>
-            <Text style={[styles.editBtnText, { color: colors.textMuted }]}>Cancel</Text>
-          </TouchableOpacity>
-        )}
+      <View style={[styles.headerRow]}>
+        <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color={colors.accentPetrol} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Profile</Text>
+        <TouchableOpacity style={styles.headerBtn} onPress={() => {}}>
+          <Ionicons name="settings-outline" size={22} color={colors.textMuted} />
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.avatarSection}>
-          <TouchableOpacity onPress={pickAvatar} style={styles.avatarWrapper}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <View style={styles.profileHeader}>
+          <TouchableOpacity onPress={pickAvatar} style={styles.avatarWrap}>
             {user?.avatar_url ? (
               <Image source={{ uri: avatarUrl(user.avatar_url) ?? undefined }} style={styles.avatar} />
             ) : user?.full_name ? (
@@ -200,50 +242,32 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             ) : (
-              <Ionicons name="person-circle-outline" size={72} color={colors.accentPetrol} />
+              <View style={[styles.avatar, { backgroundColor: colors.bgSurface, borderWidth: 1, borderColor: colors.border }]}>
+                <Ionicons name="person" size={36} color={colors.textMuted} />
+              </View>
             )}
             <View style={[styles.cameraBadge, { backgroundColor: colors.accentPetrol }]}>
-              <Ionicons name="camera" size={14} color={colors.textWhite} />
+              <Ionicons name="camera" size={14} color="#fff" />
             </View>
-            {user?.avatar_url && (
-              <TouchableOpacity
-                style={[styles.avatarDeleteBadge, { backgroundColor: colors.trendUp }]}
-                onPress={async () => {
-                  try {
-                    const updated = await api.profile.deleteAvatar();
-                    setUserState(updated);
-                    setUser(updated);
-                  } catch { showToast({ type: 'error', title: 'Error', message: 'Failed to remove avatar' }); }
-                }}
-              >
-                <Ionicons name="close" size={12} color={colors.textWhite} />
-              </TouchableOpacity>
-            )}
           </TouchableOpacity>
-
-          <Text style={[styles.name, { color: colors.textPrimary }]}>{editing ? editName : (user?.full_name || t('profile.user'))}</Text>
-          <Text style={[styles.email, { color: colors.textMuted }]}>{user?.email || ''}</Text>
+          <Text style={[styles.nameText, { color: colors.textPrimary }]}>
+            {user?.full_name || 'User'}
+          </Text>
+          <Text style={[styles.emailText, { color: colors.textMuted }]}>
+            {user?.email || ''}
+          </Text>
         </View>
 
         {editing && (
-          <View style={[styles.infoCard, { backgroundColor: colors.bgCard, borderColor: colors.accentPetrol }]}>
-            <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('profile.fullName')}</Text>
-              <TextInput
-                style={[styles.editInlineInput, { color: colors.textPrimary, borderBottomColor: colors.border }]}
-                value={editName}
-                onChangeText={setEditName}
-                placeholderTextColor={colors.textMuted}
-              />
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
-            <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('profile.email')}</Text>
-              <Text style={[styles.infoValue, { color: colors.textMuted }]}>{user?.email || '\u2014'}</Text>
-            </View>
-
-            <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
-            <Text style={[styles.editSectionTitle, { color: colors.textSecondary }]}>{t('register.businessTypeLabel')}</Text>
+          <View style={[styles.editCard, { backgroundColor: colors.bgCard, borderColor: colors.accentPetrol }]}>
+            <TextInput
+              style={[styles.editInput, { color: colors.textPrimary, borderBottomColor: colors.border }]}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Full name"
+              placeholderTextColor={colors.textMuted}
+            />
+            <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Business Type</Text>
             <View style={styles.chipGrid}>
               {BUSINESS_TYPES.map((bt) => (
                 <TouchableOpacity
@@ -251,16 +275,12 @@ export default function ProfileScreen() {
                   style={[styles.chip, { borderColor: editBizType === bt.id ? colors.accentPetrol : colors.borderInput, backgroundColor: editBizType === bt.id ? colors.bgPrimaryLight : colors.bgSurface }]}
                   onPress={() => setEditBizType(bt.id)}
                 >
-                  <Ionicons name={bt.icon as any} size={18} color={editBizType === bt.id ? colors.accentPetrol : colors.textMuted} />
-                  <Text style={[styles.chipLabel, { color: editBizType === bt.id ? colors.accentPetrol : colors.textSecondary }]}>
-                    {t(bt.labelKey)}
-                  </Text>
+                  <Ionicons name={bt.icon as any} size={16} color={editBizType === bt.id ? colors.accentPetrol : colors.textMuted} />
+                  <Text style={[styles.chipLabel, { color: editBizType === bt.id ? colors.accentPetrol : colors.textSecondary }]}>{t(bt.labelKey)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-
-            <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
-            <Text style={[styles.editSectionTitle, { color: colors.textSecondary }]}>{t('register.fuelTypeLabel')}</Text>
+            <Text style={[styles.editLabel, { color: colors.textSecondary }]}>Fuel Type</Text>
             <View style={styles.chipGrid}>
               {FUEL_TYPES.map((ft) => (
                 <TouchableOpacity
@@ -268,281 +288,296 @@ export default function ProfileScreen() {
                   style={[styles.chip, { borderColor: editFuelType === ft.id ? colors.accentPetrol : colors.borderInput, backgroundColor: editFuelType === ft.id ? colors.bgPrimaryLight : colors.bgSurface }]}
                   onPress={() => setEditFuelType(ft.id)}
                 >
-                  <Ionicons name={ft.icon as any} size={18} color={editFuelType === ft.id ? colors.accentPetrol : colors.textMuted} />
-                  <Text style={[styles.chipLabel, { color: editFuelType === ft.id ? colors.accentPetrol : colors.textSecondary }]}>
-                    {t(ft.labelKey)}
-                  </Text>
+                  <Ionicons name={ft.icon as any} size={16} color={editFuelType === ft.id ? colors.accentPetrol : colors.textMuted} />
+                  <Text style={[styles.chipLabel, { color: editFuelType === ft.id ? colors.accentPetrol : colors.textSecondary }]}>{t(ft.labelKey)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-
             <View style={styles.editActions}>
-              <TouchableOpacity
-                style={[styles.cancelBtn, { borderColor: colors.borderInput }]}
-                onPress={cancelEditing}
-              >
-                <Text style={[styles.cancelBtnText, { color: colors.textMuted }]}>Cancel</Text>
+              <TouchableOpacity style={[styles.editActionBtn, { borderColor: colors.border }]} onPress={cancelEditing}>
+                <Text style={[styles.editActionCancel, { color: colors.textMuted }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: colors.accentPetrol }, saving && { opacity: 0.7 }]}
-                onPress={saveProfile}
-                disabled={saving}
-              >
+              <TouchableOpacity style={[styles.editActionBtn, { backgroundColor: colors.accentPetrol }]} onPress={saveProfile} disabled={saving}>
                 {saving ? (
-                  <ActivityIndicator size="small" color={colors.textWhite} />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={[styles.saveBtnText, { color: colors.textWhite }]}>Save</Text>
+                  <Text style={[styles.editActionSave, { color: '#fff' }]}>Save</Text>
                 )}
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {!editing && (
-          <>
-            <View style={[styles.infoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              <Text style={[styles.infoTitle, { color: colors.textSecondary }]}>{t('profile.accountInfo')}</Text>
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('profile.fullName')}</Text>
-                <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{user?.full_name || '\u2014'}</Text>
-              </View>
-              <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('profile.email')}</Text>
-                <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{user?.email || '\u2014'}</Text>
-              </View>
-              <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('profile.businessType')}</Text>
-                <Text style={[styles.infoValue, { color: colors.textPrimary }]}>
-                  {user?.business_type ? t(`register.${BIZ_KEY[user.business_type]}`) : '\u2014'}
-                </Text>
-              </View>
-              <View style={[styles.divider, { backgroundColor: colors.bgSurface }]} />
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{t('register.fuelTypeLabel')}</Text>
-                <Text style={[styles.infoValue, { color: colors.textPrimary }]}>
-                  {user?.fuel_type ? t(`register.${user.fuel_type}`) : '\u2014'}
-                </Text>
-              </View>
-            </View>
+        <View style={{ gap: 20 }}>
+          <Section title="Personal Info" colors={colors}>
+            <SettingsRow
+              icon="person-outline"
+              label="Edit Profile"
+              colors={colors}
+              onPress={startEditing}
+            />
+            <Divider colors={colors} />
+            <SettingsRow
+              icon="lock-closed-outline"
+              label="Change Password"
+              colors={colors}
+              onPress={() => showToast({ type: 'info', title: 'Coming Soon', message: 'Password change will be available soon.' })}
+            />
+          </Section>
 
-            <View style={[styles.notifCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              <View style={styles.notifHeader}>
-                <View style={styles.notifHeaderLeft}>
-                  <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />
-                  <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>{t('profile.notifications')}</Text>
-                </View>
-                <Switch
-                  value={pushEnabled}
-                  onValueChange={handleTogglePush}
-                  disabled={toggling}
-                  trackColor={{ false: colors.borderInput, true: colors.accentPetrol }}
-                  thumbColor={colors.textWhite}
-                />
-              </View>
-              <Text style={[styles.notifText, { color: colors.textMuted }]}>
-                {pushEnabled ? t('profile.notifEnabled') : t('profile.notifDisabled')}
-              </Text>
-            </View>
+          <Section title="Notifications" colors={colors}>
+            <SettingsRowToggle
+              icon="notifications-active"
+              label="Price Alert"
+              value={pushEnabled}
+              onValueChange={handleTogglePush}
+              disabled={toggling}
+              colors={colors}
+            />
+            <Divider colors={colors} />
+            <SettingsRowToggle
+              icon="trending-up-outline"
+              label="Weekly Insights"
+              value={weeklyInsights}
+              onValueChange={handleToggleInsights}
+              colors={colors}
+            />
+          </Section>
 
-            {pushEnabled && (
-              <View style={[styles.notifCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                <View style={styles.notifHeader}>
-                  <View style={styles.notifHeaderLeft}>
-                    <Ionicons name="trending-down-outline" size={20} color={colors.textSecondary} />
-                    <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>{t('profile.minChange')}</Text>
-                  </View>
-                </View>
-                <View style={styles.thresholdRow}>
-                  {THRESHOLD_OPTIONS.map((pct) => (
-                    <TouchableOpacity
-                      key={pct}
-                      style={[styles.thresholdBtn, {
-                        borderColor: minChangePct === pct ? colors.accentPetrol : colors.borderInput,
-                        backgroundColor: minChangePct === pct ? colors.bgPrimaryLight : colors.bgSurface,
-                      }]}
-                      onPress={() => { setMinChangePct(pct); updatePrefs({ min_change_pct: pct }); }}
-                    >
-                      <Text style={[styles.thresholdBtnText, {
-                        color: minChangePct === pct ? colors.accentPetrol : colors.textSecondary,
-                        fontWeight: minChangePct === pct ? '700' : '500',
-                      }]}>{pct}%</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <View style={styles.fuelToggleRow}>
+          {pushEnabled && (
+            <View style={[styles.thresholdCard, { backgroundColor: colors.bgSurface, borderColor: colors.border }]}>
+              <View style={styles.thresholdRow}>
+                {THRESHOLD_OPTIONS.map((pct) => (
                   <TouchableOpacity
-                    style={[styles.fuelToggleChip, {
-                      borderColor: alertOnPetrol ? colors.accentPetrol : colors.borderInput,
-                      backgroundColor: alertOnPetrol ? colors.bgPrimaryLight : colors.bgSurface,
+                    key={pct}
+                    style={[styles.thresholdChip, {
+                      borderColor: minChangePct === pct ? colors.accentPetrol : colors.borderInput,
+                      backgroundColor: minChangePct === pct ? colors.bgPrimaryLight : colors.bgSurface,
                     }]}
-                    onPress={() => { setAlertOnPetrol(!alertOnPetrol); updatePrefs({ alert_on_petrol: !alertOnPetrol }); }}
+                    onPress={() => { setMinChangePct(pct); updatePrefs({ min_change_pct: pct }); }}
                   >
-                    <MaterialCommunityIcons name="gas-station-outline" size={16} color={alertOnPetrol ? colors.accentPetrol : colors.textMuted} />
-                    <Text style={[styles.fuelToggleLabel, { color: alertOnPetrol ? colors.accentPetrol : colors.textMuted }]}>{t('register.petrol')}</Text>
-                    {alertOnPetrol && <Ionicons name="checkmark-circle" size={16} color={colors.accentPetrol} />}
+                    <Text style={[styles.thresholdChipText, { color: minChangePct === pct ? colors.accentPetrol : colors.textSecondary, fontWeight: minChangePct === pct ? '700' : '500' }]}>{pct}%</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.fuelToggleChip, {
-                      borderColor: alertOnDiesel ? colors.accentPetrol : colors.borderInput,
-                      backgroundColor: alertOnDiesel ? colors.bgPrimaryLight : colors.bgSurface,
-                    }]}
-                    onPress={() => { setAlertOnDiesel(!alertOnDiesel); updatePrefs({ alert_on_diesel: !alertOnDiesel }); }}
-                  >
-                    <MaterialCommunityIcons name="engine-outline" size={16} color={alertOnDiesel ? colors.accentPetrol : colors.textMuted} />
-                    <Text style={[styles.fuelToggleLabel, { color: alertOnDiesel ? colors.accentPetrol : colors.textMuted }]}>{t('register.diesel')}</Text>
-                    {alertOnDiesel && <Ionicons name="checkmark-circle" size={16} color={colors.accentPetrol} />}
-                  </TouchableOpacity>
-                </View>
+                ))}
               </View>
-            )}
-
-            <View style={[styles.notifCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              <View style={styles.notifHeader}>
-                <View style={styles.notifHeaderLeft}>
-                  <Ionicons name={theme === 'dark' ? 'moon' : 'sunny-outline'} size={20} color={colors.textSecondary} />
-                  <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>{t('profile.darkMode')}</Text>
-                </View>
-                <Switch
-                  value={theme === 'dark'}
-                  onValueChange={toggleTheme}
-                  trackColor={{ false: colors.borderInput, true: colors.accentPetrol }}
-                  thumbColor={colors.textWhite}
-                />
-              </View>
-              <Text style={[styles.notifText, { color: colors.textMuted }]}>
-                {theme === 'dark' ? t('profile.darkActive') : t('profile.darkInactive')}
-              </Text>
-            </View>
-
-            <View style={[styles.notifCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              <View style={styles.notifHeader}>
-                <View style={styles.notifHeaderLeft}>
-                  <Ionicons name="language-outline" size={20} color={colors.textSecondary} />
-                  <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>{t('profile.language')}</Text>
-                </View>
-              </View>
-              <View style={styles.langRow}>
+              <View style={styles.fuelToggleRow}>
                 <TouchableOpacity
-                  style={[styles.langBtn, { borderColor: colors.borderInput }, currentLang === 'en' && { borderColor: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}
-                  onPress={() => handleLangChange('en')}
+                  style={[styles.fuelToggleChip, { borderColor: alertOnPetrol ? colors.accentPetrol : colors.borderInput, backgroundColor: alertOnPetrol ? colors.bgPrimaryLight : colors.bgSurface }]}
+                  onPress={() => { setAlertOnPetrol(!alertOnPetrol); updatePrefs({ alert_on_petrol: !alertOnPetrol }); }}
                 >
-                  <Text style={[styles.langBtnText, { color: currentLang === 'en' ? colors.accentPetrol : colors.textMuted }]}>{t('profile.english')}</Text>
+                  <Ionicons name="car-sport-outline" size={16} color={alertOnPetrol ? colors.accentPetrol : colors.textMuted} />
+                  <Text style={[styles.fuelToggleLabel, { color: alertOnPetrol ? colors.accentPetrol : colors.textMuted }]}>Petrol</Text>
+                  {alertOnPetrol && <Ionicons name="checkmark-circle" size={16} color={colors.accentPetrol} />}
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.langBtn, { borderColor: colors.borderInput }, currentLang === 'fr' && { borderColor: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}
-                  onPress={() => handleLangChange('fr')}
+                  style={[styles.fuelToggleChip, { borderColor: alertOnDiesel ? colors.accentPetrol : colors.borderInput, backgroundColor: alertOnDiesel ? colors.bgPrimaryLight : colors.bgSurface }]}
+                  onPress={() => { setAlertOnDiesel(!alertOnDiesel); updatePrefs({ alert_on_diesel: !alertOnDiesel }); }}
                 >
-                  <Text style={[styles.langBtnText, { color: currentLang === 'fr' ? colors.accentPetrol : colors.textMuted }]}>{t('profile.french')}</Text>
+                  <Ionicons name="car-outline" size={16} color={alertOnDiesel ? colors.accentPetrol : colors.textMuted} />
+                  <Text style={[styles.fuelToggleLabel, { color: alertOnDiesel ? colors.accentPetrol : colors.textMuted }]}>Diesel</Text>
+                  {alertOnDiesel && <Ionicons name="checkmark-circle" size={16} color={colors.accentPetrol} />}
                 </TouchableOpacity>
               </View>
             </View>
+          )}
 
-            <TouchableOpacity style={[styles.surveyCard, { backgroundColor: colors.bgCard, borderColor: colors.accentPetrol }]} onPress={() => router.push('/survey')}>
-              <View style={styles.surveyIconRow}>
-                <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
-                <Text style={[styles.surveyBadge, { color: colors.accentPetrol, backgroundColor: colors.bgPrimaryLight }]}>{t('profile.surveyTime')}</Text>
-              </View>
-              <Text style={[styles.surveyTitle, { color: colors.textPrimary }]}>{t('profile.surveyTitle')}</Text>
-              <Text style={[styles.surveyText, { color: colors.textSecondary }]}>{t('profile.surveyDesc')}</Text>
-            </TouchableOpacity>
+          <Section title="App Settings" colors={colors}>
+            <SettingsRow
+              icon="gas-station-outline"
+              label="Preferred Fuel"
+              subtitle={user?.fuel_type ? t(`register.${user.fuel_type}`) : t('register.petrol')}
+              colors={colors}
+              onPress={openFuelModal}
+            />
+            <Divider colors={colors} />
+            <SettingsRow
+              icon="resize-outline"
+              label="Units"
+              subtitle="Liters"
+              colors={colors}
+              onPress={() => {}}
+            />
+            <Divider colors={colors} />
+            <SettingsRow
+              icon="language-outline"
+              label="Language"
+              subtitle={currentLang === 'en' ? 'English' : 'Français'}
+              colors={colors}
+              onPress={() => setActiveModal('lang')}
+            />
+            <Divider colors={colors} />
+            <SettingsRowToggle
+              icon={theme === 'dark' ? 'moon-outline' : 'sunny-outline'}
+              label="Dark Mode"
+              value={theme === 'dark'}
+              onValueChange={toggleTheme}
+              colors={colors}
+            />
+          </Section>
 
-            <View style={[styles.appInfoCard, { backgroundColor: colors.bgInsight }]}>
-              <Text style={[styles.appInfoTitle, { color: colors.accentPetrol }]}>{t('profile.appInfo')}</Text>
-              <Text style={[styles.appInfoVersion, { color: colors.textMuted }]}>{t('profile.version')}</Text>
-              <Text style={[styles.appInfoDesc, { color: colors.textSecondary }]}>{t('profile.appDescription')}</Text>
-            </View>
+          <Section title="Support" colors={colors}>
+            <SettingsRow
+              icon="help-circle-outline"
+              label="Help Center"
+              colors={colors}
+              onPress={() => {}}
+            />
+            <Divider colors={colors} />
+            <SettingsRow
+              icon="shield-outline"
+              label="Privacy Policy"
+              colors={colors}
+              onPress={() => {}}
+            />
+          </Section>
+        </View>
 
-            <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.bgCard, borderColor: colors.trendUp }]} onPress={handleLogout}>
-              <Text style={[styles.logoutText, { color: colors.trendUp }]}>{t('profile.logout')}</Text>
-            </TouchableOpacity>
-          </>
-        )}
+        <TouchableOpacity
+          style={[styles.logoutBtn, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={18} color={colors.trendUp} />
+          <Text style={[styles.logoutText, { color: colors.trendUp }]}>{t('profile.logout')}</Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 100 }} />
       </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={activeModal === 'fuel'} transparent animationType="fade" onRequestClose={() => setActiveModal(null)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setActiveModal(null)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Preferred Fuel</Text>
+            {selectableItem(FUEL_TYPES.map(ft => ({ id: ft.id, labelKey: ft.labelKey })), modalFuel, setModalFuel)}
+            <TouchableOpacity style={[styles.modalDone, { backgroundColor: colors.accentPetrol }]} onPress={confirmFuel}>
+              <Text style={[styles.modalDoneText, { color: '#fff' }]}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={activeModal === 'lang'} transparent animationType="fade" onRequestClose={() => setActiveModal(null)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setActiveModal(null)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Language</Text>
+            {selectableItem([
+              { id: 'en', labelKey: 'English' as any },
+              { id: 'fr', labelKey: 'Français' as any },
+            ], currentLang, (id) => handleLangChange(id as 'en' | 'fr'))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
 
+function Section({ title, colors, children }: { title: string; colors: any; children: React.ReactNode }) {
+  return (
+    <View>
+      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{title}</Text>
+      <View style={[styles.sectionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function SettingsRow({ icon, label, subtitle, colors, onPress }: { icon: string; label: string; subtitle?: string; colors: any; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={styles.settingsRow} onPress={onPress} activeOpacity={0.6}>
+      <View style={[styles.settingsIcon, { backgroundColor: colors.bgPrimaryLight || colors.bgSurface }]}>
+        <Ionicons name={icon as any} size={20} color={colors.accentPetrol} />
+      </View>
+      <View style={styles.settingsLabelWrap}>
+        <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{label}</Text>
+        {subtitle && <Text style={[styles.settingsSubtitle, { color: colors.textMuted }]}>{subtitle}</Text>}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+    </TouchableOpacity>
+  );
+}
+
+function SettingsRowToggle({ icon, label, value, disabled, onValueChange, colors }: { icon: string; label: string; value: boolean; disabled?: boolean; onValueChange: (v: boolean) => void; colors: any }) {
+  return (
+    <View style={styles.settingsRow}>
+      <View style={[styles.settingsIcon, { backgroundColor: colors.bgPrimaryLight || colors.bgSurface }]}>
+        <Ionicons name={icon as any} size={20} color={colors.accentPetrol} />
+      </View>
+      <Text style={[styles.settingsLabel, { color: colors.textPrimary, flex: 1 }]}>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        disabled={disabled}
+        trackColor={{ false: colors.borderInput, true: colors.accentPetrol }}
+        thumbColor="#fff"
+      />
+    </View>
+  );
+}
+
+function Divider({ colors }: { colors: any }) {
+  return <View style={[styles.divider, { backgroundColor: colors.border }]} />;
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, height: 56,
+  headerRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 12, height: 56,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 4 },
-  editBtnText: { fontSize: 14, fontWeight: '600' },
-  scroll: { flex: 1 },
-  scrollContent: { padding: 16, gap: 24, paddingBottom: 32 },
-  avatarSection: { alignItems: 'center', gap: 8, paddingVertical: 24 },
-  avatarWrapper: { position: 'relative' },
-  avatar: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 32, fontWeight: '700' },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 8, gap: 24 },
+  profileHeader: { alignItems: 'center', gap: 6, paddingVertical: 8 },
+  avatarWrap: { position: 'relative', marginBottom: 4 },
+  avatar: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 36, fontWeight: '700' },
   cameraBadge: {
     position: 'absolute', bottom: 0, right: 0,
-    width: 26, height: 26, borderRadius: 13,
+    width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: '#fff',
   },
-  avatarDeleteBadge: {
-    position: 'absolute', top: 0, right: 0,
-    width: 22, height: 22, borderRadius: 11,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#fff',
-  },
-  name: { fontSize: 20, fontWeight: '700' },
-  email: { fontSize: 14 },
-  editInlineInput: {
-    fontSize: 14, fontWeight: '600', textAlign: 'right',
-    borderBottomWidth: 1, paddingVertical: 2, minWidth: 120, paddingHorizontal: 4,
-  },
-  editSectionTitle: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 },
-  editActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  nameText: { fontSize: 22, fontWeight: '700' },
+  emailText: { fontSize: 14 },
+  editCard: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12 },
+  editInput: { fontSize: 16, fontWeight: '600', borderBottomWidth: 1, paddingVertical: 6 },
+  editLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1,
-  },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
   chipLabel: { fontSize: 13, fontWeight: '500' },
-  cancelBtn: { flex: 1, height: 44, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  cancelBtnText: { fontSize: 15, fontWeight: '600' },
-  saveBtn: { flex: 1, height: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  saveBtnText: { fontSize: 15, fontWeight: '600' },
-  infoCard: { borderRadius: 12, borderWidth: 1, padding: 24, gap: 12 },
-  infoTitle: { fontSize: 14, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  infoLabel: { fontSize: 14 },
-  infoValue: { fontSize: 14, fontWeight: '600' },
-  divider: { height: 1 },
-  notifCard: { borderRadius: 12, borderWidth: 1, padding: 20, gap: 8 },
-  notifHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  notifHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  notifTitle: { fontSize: 15, fontWeight: '600' },
-  notifText: { fontSize: 13, lineHeight: 18 },
-  thresholdRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  thresholdBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
-  thresholdBtnText: { fontSize: 14 },
-  fuelToggleRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  editActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  editActionBtn: { flex: 1, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  editActionCancel: { fontSize: 15, fontWeight: '600' },
+  editActionSave: { fontSize: 15, fontWeight: '600' },
+  sectionTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
+  sectionCard: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
+  settingsRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 14, paddingHorizontal: 14, gap: 12,
+  },
+  settingsIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  settingsLabelWrap: { flex: 1 },
+  settingsLabel: { fontSize: 15, fontWeight: '500' },
+  settingsSubtitle: { fontSize: 12, marginTop: 1 },
+  divider: { height: 1, marginHorizontal: 14 },
+  thresholdCard: { borderWidth: 1, borderRadius: 12, padding: 16, gap: 12, marginTop: -12 },
+  thresholdRow: { flexDirection: 'row', gap: 8 },
+  thresholdChip: { flex: 1, paddingVertical: 8, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
+  thresholdChipText: { fontSize: 13 },
+  fuelToggleRow: { flexDirection: 'row', gap: 8 },
   fuelToggleChip: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
   fuelToggleLabel: { fontSize: 13, fontWeight: '500' },
-  langRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  langBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
-  langBtnText: { fontSize: 14, fontWeight: '600' },
-  surveyCard: {
-    borderRadius: 12, borderWidth: 1, borderLeftWidth: 4,
-    padding: 20, gap: 8,
+  logoutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    height: 48, borderRadius: 12, borderWidth: 1, marginTop: 4,
   },
-  surveyIconRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  surveyBadge: { fontSize: 10, fontWeight: '600', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, textTransform: 'uppercase' },
-  surveyTitle: { fontSize: 16, fontWeight: '700' },
-  surveyText: { fontSize: 14, lineHeight: 20 },
-  appInfoCard: { borderRadius: 12, padding: 24, alignItems: 'center', gap: 4 },
-  appInfoTitle: { fontSize: 18, fontWeight: '700' },
-  appInfoVersion: { fontSize: 12 },
-  appInfoDesc: { fontSize: 12, textAlign: 'center', lineHeight: 18, marginTop: 4 },
-  logoutButton: { height: 48, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   logoutText: { fontSize: 16, fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, gap: 16, paddingBottom: 40 },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
+  modalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 4 },
+  modalRowText: { fontSize: 16 },
+  modalDone: { height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+  modalDoneText: { fontSize: 16, fontWeight: '600' },
 });
