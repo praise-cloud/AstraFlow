@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View, Text, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, Pressable } from 'react-native';
+import { StyleSheet, TextInput, View, Text, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { useAppColor } from '@/hooks/useAppColor';
 import { api } from '@/services/api';
 import { setToken, setUser } from '@/services/auth';
+import { AnimatedPressable } from '@/components/animations/AnimatedPressable';
+import { SlideInView } from '@/components/animations/SlideInView';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -46,78 +48,85 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.brandSection}>
-            <View style={[styles.logo, { backgroundColor: colors.accentPetrol }]}>
-              <MaterialCommunityIcons name="gas-station-outline" size={48} color={colors.textWhite} />
+          <SlideInView direction="up" duration={500}>
+            <View style={styles.brandSection}>
+              <View style={[styles.logo, { backgroundColor: colors.accentPetrol }]}>
+                <MaterialCommunityIcons name="gas-station-outline" size={48} color={colors.textWhite} />
+              </View>
+              <Text style={[styles.brandName, { color: colors.accentPetrol }]}>{t('common.appName')}</Text>
+              <Text style={[styles.tagline, { color: colors.textSecondary }]}>
+                {t('login.tagline')}
+              </Text>
             </View>
-            <Text style={[styles.brandName, { color: colors.accentPetrol }]}>{t('common.appName')}</Text>
-            <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-              {t('login.tagline')}
-            </Text>
-          </View>
+          </SlideInView>
 
-          <View style={[styles.formCard, { backgroundColor: colors.bgCard, borderColor: colors.borderInput }]}>
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('login.emailLabel')}</Text>
-              <TextInput
-                style={[styles.input, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
-                placeholder={t('login.emailPlaceholder')}
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('login.passwordLabel')}</Text>
-              <View style={styles.passwordContainer}>
+          <SlideInView direction="up" duration={500} delay={150}>
+            <View style={[styles.formCard, { backgroundColor: colors.bgCard, borderColor: colors.borderInput }]}>
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{t('login.emailLabel')}</Text>
                 <TextInput
-                  style={[styles.passwordInput, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
-                  placeholder={t('login.passwordPlaceholder')}
+                  style={[styles.input, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
+                  placeholder={t('login.emailPlaceholder')}
                   placeholderTextColor={colors.textMuted}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   editable={!loading}
                 />
-                <Pressable
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                >
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
-                </Pressable>
               </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{t('login.passwordLabel')}</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[styles.passwordInput, { borderColor: colors.borderInput, color: colors.textPrimary, backgroundColor: colors.bgCard }]}
+                    placeholder={t('login.passwordPlaceholder')}
+                    placeholderTextColor={colors.textMuted}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    editable={!loading}
+                  />
+                  <Pressable
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(!showPassword)}
+                    disabled={loading}
+                  >
+                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <AnimatedPressable
+                style={[styles.primaryButton, loading && styles.buttonDisabled, { backgroundColor: colors.accentPetrol }]}
+                onPress={handleLogin}
+                disabled={loading}
+                scaleTo={0.97}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={colors.textWhite} />
+                ) : (
+                  <>
+                    <Text style={[styles.buttonText, { color: colors.textWhite }]}>{t('login.signIn')}</Text>
+                    <Ionicons name="arrow-forward" size={20} color={colors.textWhite} />
+                  </>
+                )}
+              </AnimatedPressable>
             </View>
+          </SlideInView>
 
-            <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.buttonDisabled, { backgroundColor: colors.accentPetrol }]}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color={colors.textWhite} />
-              ) : (
-                <>
-                  <Text style={[styles.buttonText, { color: colors.textWhite }]}>{t('login.signIn')}</Text>
-                  <Ionicons name="arrow-forward" size={20} color={colors.textWhite} />
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.footerSection}>
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              {t('login.noAccount')}{' '}
-              <Text style={[styles.linkText, { color: colors.accentPetrol }]} onPress={() => router.push('/register')}>
-                {t('login.createOne')}
+          <SlideInView direction="up" duration={400} delay={300}>
+            <View style={styles.footerSection}>
+              <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+                {t('login.noAccount')}{' '}
+                <Text style={[styles.linkText, { color: colors.accentPetrol }]} onPress={() => router.push('/register')}>
+                  {t('login.createOne')}
+                </Text>
               </Text>
-            </Text>
-          </View>
+            </View>
+          </SlideInView>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

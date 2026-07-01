@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Platform } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
@@ -262,6 +262,7 @@ export default function RoutesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <View style={styles.headerLeft}>
           
@@ -343,6 +344,7 @@ export default function RoutesScreen() {
           </TouchableOpacity>
         </View>
       </View>
+      </KeyboardAvoidingView>
 
       {error && (
         <View style={[styles.errorBanner, { backgroundColor: colors.trendUp + '20' }]}>
@@ -388,6 +390,32 @@ export default function RoutesScreen() {
       </View>
 
       {routes.length > 0 && (
+        <>
+        <View style={[styles.fuelDetailCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderLeftColor: colors.accentPetrol }]}>
+          <View style={styles.fuelDetailHeader}>
+            <Ionicons name="flame-outline" size={18} color={colors.accentPetrol} />
+            <Text style={[styles.fuelDetailTitle, { color: colors.textPrimary }]}>Fuel Estimate</Text>
+          </View>
+          <View style={styles.fuelDetailGrid}>
+            <View style={styles.fuelDetailItem}>
+              <Text style={[styles.fuelDetailLabel, { color: colors.textMuted }]}>Distance</Text>
+              <Text style={[styles.fuelDetailValue, { color: colors.textPrimary }]}>{routes[0].distance_km.toFixed(1)} km</Text>
+            </View>
+            <View style={styles.fuelDetailItem}>
+              <Text style={[styles.fuelDetailLabel, { color: colors.textMuted }]}>Duration</Text>
+              <Text style={[styles.fuelDetailValue, { color: colors.textPrimary }]}>{Math.round(routes[0].duration_min + routes[0].traffic_delay_min)} min</Text>
+            </View>
+            <View style={styles.fuelDetailItem}>
+              <Text style={[styles.fuelDetailLabel, { color: colors.textMuted }]}>Est. Fuel</Text>
+              <Text style={[styles.fuelDetailValue, { color: colors.textPrimary }]}>{(routes[0].distance_km * 0.08).toFixed(1)} L</Text>
+            </View>
+            <View style={styles.fuelDetailItem}>
+              <Text style={[styles.fuelDetailLabel, { color: colors.textMuted }]}>Fuel Cost</Text>
+              <Text style={[styles.fuelDetailValue, { color: colors.accentDiesel }]}>${routes[0].fuel_cost_usd.toFixed(2)}</Text>
+            </View>
+          </View>
+        </View>
+
         <ScrollView style={styles.routesContainer} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.routesContent}>
           {routes.map((route, i) => (
             <View key={i} style={[styles.routeCard, { backgroundColor: colors.bgCard, borderColor: colors.border, shadowColor: colors.shadow }, i === 0 && styles.routeCardBest, i === 0 && { borderColor: colors.accentPetrol }]}>
@@ -420,6 +448,7 @@ export default function RoutesScreen() {
             </View>
           ))}
         </ScrollView>
+        </>
       )}
     </SafeAreaView>
   );
@@ -492,4 +521,14 @@ const styles = StyleSheet.create({
   routeStat: { fontSize: 12, fontWeight: '600' },
   trafficText: { fontSize: 11, fontWeight: '500' },
   gasText: { fontSize: 11, fontWeight: '500' },
+  fuelDetailCard: {
+    borderRadius: 10, borderWidth: 1, borderLeftWidth: 4,
+    marginHorizontal: 12, padding: 14, gap: 8, marginBottom: 8,
+  },
+  fuelDetailHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  fuelDetailTitle: { fontSize: 14, fontWeight: '700' },
+  fuelDetailGrid: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  fuelDetailItem: { flex: 1, alignItems: 'center', gap: 2 },
+  fuelDetailLabel: { fontSize: 9, fontWeight: '600', textTransform: 'uppercase' },
+  fuelDetailValue: { fontSize: 14, fontWeight: '700' },
 });

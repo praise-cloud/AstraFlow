@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, TextInput, Image } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, RefreshControl, TextInput, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,9 +8,13 @@ import { useTranslation } from 'react-i18next';
 import { api } from '@/services/api';
 import { getUser } from '@/services/auth';
 import { Sparkline } from '@/components/Sparkline';
-import { ErrorCard } from '@/components/StatusCards';
 import { useAppColor } from '@/hooks/useAppColor';
 import { getCurrentLanguage } from '@/i18n';
+import { AnimatedPressable } from '@/components/animations/AnimatedPressable';
+import { AnimatedBar } from '@/components/animations/AnimatedBar';
+import { StaggerContainer } from '@/components/animations/StaggerContainer';
+import { SlideInView } from '@/components/animations/SlideInView';
+import { Shimmer } from '@/components/animations/Shimmer';
 
 type DashboardData = {
   current_price: { petrol: number; diesel: number; currency: string; unit: string };
@@ -148,7 +152,7 @@ export default function HomeScreen() {
             <Text style={[styles.badgeText, { color: colors.badgeText }]}> {t('home.location')}</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
+        <AnimatedPressable style={styles.profileBtn} onPress={() => router.push('/profile')} scaleTo={0.9}>
           {user?.avatar_url ? (
             <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
           ) : (
@@ -158,194 +162,228 @@ export default function HomeScreen() {
               </Text>
             </View>
           )}
-        </TouchableOpacity>
+        </AnimatedPressable>
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentPetrol} />}
+        keyboardShouldPersistTaps="handled"
       >
         {loading && !data ? (
           <View style={styles.scrollContent}>
-            <View style={[styles.bannerCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
-              <View style={{ width: 80, height: 10, backgroundColor: colors.bgSkeleton, borderRadius: 4 }} />
-              <View style={{ width: '60%', height: 18, backgroundColor: colors.bgSkeleton, borderRadius: 4 }} />
-            </View>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, flex: 1 }]}>
-                <View style={{ height: 14, width: '50%', backgroundColor: colors.bgSkeleton, borderRadius: 4 }} />
-                <View style={{ height: 22, width: '70%', backgroundColor: colors.bgSkeleton, borderRadius: 4, marginTop: 6 }} />
+            <SlideInView direction="up" duration={300}>
+              <View style={[styles.bannerCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
+                <Shimmer width={80} height={10} borderRadius={4} baseColor={colors.bgSkeleton} shimmerColor="rgba(255,255,255,0.1)" />
+                <Shimmer width="60%" height={18} borderRadius={4} baseColor={colors.bgSkeleton} shimmerColor="rgba(255,255,255,0.1)" delay={100} />
               </View>
-            </View>
+            </SlideInView>
+            <SlideInView direction="up" duration={300} delay={100}>
+              <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, flex: 1 }]}>
+                <Shimmer width="50%" height={14} borderRadius={4} baseColor={colors.bgSkeleton} shimmerColor="rgba(255,255,255,0.1)" />
+                <Shimmer width="70%" height={22} borderRadius={4} baseColor={colors.bgSkeleton} shimmerColor="rgba(255,255,255,0.1)" delay={150} />
+              </View>
+            </SlideInView>
           </View>
         ) : data ? (
           <>
             {error && (
-              <ErrorCard message={error} actionLabel={t('common.retry')} onAction={fetchDashboard} />
+              <AnimatedPressable
+                style={[styles.errorBanner, { backgroundColor: colors.bgError }]}
+                onPress={fetchDashboard}
+                scaleTo={0.98}
+              >
+                <Text style={[styles.errorText, { color: colors.textError }]}>{error}</Text>
+                <Text style={[styles.retryText, { color: colors.textError }]}>{t('common.retry')}</Text>
+              </AnimatedPressable>
             )}
 
-            <View style={[styles.bannerCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
-              <View style={[styles.bannerAccent, { backgroundColor: colors.accentPetrol }]} />
-              <View style={styles.bannerContent}>
-                <Text style={[styles.bannerLabel, { color: colors.accentPetrol }]}>{t('home.recommendation')}</Text>
-                <Text style={[styles.bannerTitle, { color: colors.textPrimary }]}>{data.recommendation.title}</Text>
-                <Text style={[styles.bannerText, { color: colors.textSecondary }]}>{data.recommendation.content}</Text>
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {showPetrol && (
-                <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentPetrol, borderTopWidth: 3, flex: showDiesel ? 1 : undefined }]}>
-                  <View style={styles.priceHeader}>
-                    <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{t('common.petrol')}</Text>
-                    <View style={styles.trendRow}>
-                      {data.trend.petrol === 'up' ? (
-                        <Ionicons name="arrow-up" size={13} color={colors.trendUp} />
-                      ) : (
-                        <Ionicons name="arrow-down" size={13} color={colors.trendDown} />
-                      )}
-                      <Text style={[data.trend.petrol === 'up' ? { color: colors.trendUp } : { color: colors.trendDown }, { fontSize: 12, fontWeight: '600' }]}>
-                        {data.trend.petrol_change}%
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.priceBody}>
-                    <View>
-                      <Text style={[styles.priceValue, { color: colors.textPrimary }]}>
-                        Rs {data.current_price.petrol.toFixed(2)}
-                        <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
-                      </Text>
-                      <Text style={[styles.priceSub, { color: colors.textMuted }]}>{t('common.perLitre')}</Text>
-                    </View>
-                    <Sparkline
-                      data={makeSparklineSmooth(data.current_price.petrol, data.trend.petrol, data.trend.petrol_change)}
-                      width={70}
-                      height={36}
-                      color={colors.accentPetrol}
-                      strokeWidth={2}
-                    />
+            <StaggerContainer staggerDelay={100} direction="up" duration={350}>
+              <SlideInView direction="up" duration={400}>
+                <View style={[styles.bannerCard, { backgroundColor: colors.bgBanner, borderColor: colors.borderLight }]}>
+                  <View style={[styles.bannerAccent, { backgroundColor: colors.accentPetrol }]} />
+                  <View style={styles.bannerContent}>
+                    <Text style={[styles.bannerLabel, { color: colors.accentPetrol }]}>{t('home.recommendation')}</Text>
+                    <Text style={[styles.bannerTitle, { color: colors.textPrimary }]}>{data.recommendation.title}</Text>
+                    <Text style={[styles.bannerText, { color: colors.textSecondary }]}>{data.recommendation.content}</Text>
                   </View>
                 </View>
+              </SlideInView>
+
+              <SlideInView direction="up" duration={400} delay={100}>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {showPetrol && (
+                    <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentPetrol, borderTopWidth: 3, flex: showDiesel ? 1 : undefined }]}>
+                      <View style={styles.priceHeader}>
+                        <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{t('common.petrol')}</Text>
+                        <View style={styles.trendRow}>
+                          {data.trend.petrol === 'up' ? (
+                            <Ionicons name="arrow-up" size={13} color={colors.trendUp} />
+                          ) : (
+                            <Ionicons name="arrow-down" size={13} color={colors.trendDown} />
+                          )}
+                          <Text style={[data.trend.petrol === 'up' ? { color: colors.trendUp } : { color: colors.trendDown }, { fontSize: 12, fontWeight: '600' }]}>
+                            {data.trend.petrol_change}%
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.priceBody}>
+                        <View>
+                          <Text style={[styles.priceValue, { color: colors.textPrimary }]}>
+                            Rs {data.current_price.petrol.toFixed(2)}
+                            <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
+                          </Text>
+                          <Text style={[styles.priceSub, { color: colors.textMuted }]}>{t('common.perLitre')}</Text>
+                        </View>
+                        <Sparkline
+                          data={makeSparklineSmooth(data.current_price.petrol, data.trend.petrol, data.trend.petrol_change)}
+                          width={70}
+                          height={36}
+                          color={colors.accentPetrol}
+                          strokeWidth={2}
+                        />
+                      </View>
+                    </View>
+                  )}
+                  {showDiesel && (
+                    <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentDiesel, borderTopWidth: 3, flex: showPetrol ? 1 : undefined }]}>
+                      <View style={styles.priceHeader}>
+                        <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{t('common.diesel')}</Text>
+                        <View style={styles.trendRow}>
+                          {data.trend.diesel === 'up' ? (
+                            <Ionicons name="arrow-up" size={13} color={colors.trendUp} />
+                          ) : (
+                            <Ionicons name="arrow-down" size={13} color={colors.trendDown} />
+                          )}
+                          <Text style={[data.trend.diesel === 'up' ? { color: colors.trendUp } : { color: colors.trendDown }, { fontSize: 12, fontWeight: '600' }]}>
+                            {data.trend.diesel_change}%
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.priceBody}>
+                        <View>
+                          <Text style={[styles.priceValue, { color: colors.textPrimary }]}>
+                            Rs {data.current_price.diesel.toFixed(2)}
+                            <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
+                          </Text>
+                          <Text style={[styles.priceSub, { color: colors.textMuted }]}>{t('common.perLitre')}</Text>
+                        </View>
+                        <Sparkline
+                          data={makeSparklineSmooth(data.current_price.diesel, data.trend.diesel, data.trend.diesel_change)}
+                          width={70}
+                          height={36}
+                          color={colors.accentDiesel}
+                          strokeWidth={2}
+                        />
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </SlideInView>
+
+              <SlideInView direction="up" duration={400} delay={200}>
+                <View style={[styles.fuelUsageCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                  <Text style={[styles.fuelUsageTitle, { color: colors.textPrimary }]}>{t('home.yourFuelUsage')}</Text>
+                  <View style={styles.fuelUsageGrid}>
+                    <View style={styles.fuelUsageItem}>
+                      <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.dailyUsage')}</Text>
+                      <View style={styles.fuelInputRow}>
+                        <TextInput
+                          style={[styles.fuelInput, { backgroundColor: colors.bg, borderColor: colors.borderInput, color: colors.textPrimary }]}
+                          value={fuelLiters}
+                          onChangeText={setFuelLiters}
+                          keyboardType="numeric"
+                          placeholder={t('home.dailyPlaceholder')}
+                          placeholderTextColor={colors.textMuted}
+                        />
+                        <Text style={[styles.fuelInputUnit, { color: colors.textMuted }]}>{t('common.litre')}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.fuelUsageItem}>
+                      <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.estDriven')}</Text>
+                      <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>{kmDriven || dailyEstKm} km/day</Text>
+                    </View>
+                    <View style={styles.fuelUsageItem}>
+                      <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.weeklyCost')}</Text>
+                      <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>Rs {weeklyFuelCost.toFixed(0)}</Text>
+                    </View>
+                    <View style={styles.fuelUsageItem}>
+                      <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.lastRefill')}</Text>
+                      <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>{lastRefill ? formatDate(lastRefill) : '\u2014'}</Text>
+                    </View>
+                  </View>
+                </View>
+              </SlideInView>
+
+              <SlideInView direction="up" duration={400} delay={300}>
+                <View style={styles.metricsRow}>
+                  <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                    <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.fuelRisk')}</Text>
+                    <AnimatedBar
+                      percentage={riskPct}
+                      color={(colors as any)[`risk${data.risk_level}`] || colors.riskModerate}
+                      trackColor={colors.barTrack}
+                      height={6}
+                      borderRadius={3}
+                      duration={700}
+                    />
+                    <Text style={[styles.metricValue, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>
+                      {data.risk_level} &middot; {riskPct.toFixed(0)}%
+                    </Text>
+                    <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.basedOnTrend')}</Text>
+                  </View>
+                  <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                    <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.businessImpact')}</Text>
+                    <AnimatedBar
+                      percentage={impactPct}
+                      color={impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow}
+                      trackColor={colors.barTrack}
+                      height={6}
+                      borderRadius={3}
+                      duration={700}
+                    />
+                    <Text style={[styles.metricValue, { color: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]}>
+                      {data.impact_score} &middot; {impactPct.toFixed(0)}%
+                    </Text>
+                    <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.weeklySpend', { amount: weeklyFuelCost.toFixed(0) })}</Text>
+                  </View>
+                </View>
+              </SlideInView>
+
+              {data.global_crude?.brent_usd && (
+                <SlideInView direction="up" duration={400} delay={400}>
+                  <View style={[styles.globalCrudeCard, { backgroundColor: colors.crudeBg, borderColor: colors.crudeDivider }]}>
+                    <View style={styles.globalCrudeHeader}>
+                      <Ionicons name="globe-outline" size={16} color={colors.crudeText} />
+                      <Text style={[styles.globalCrudeTitle, { color: colors.crudeText }]}> {t('home.globalCrude')}</Text>
+                    </View>
+                    <View style={styles.globalCrudeRow}>
+                      <View style={styles.globalCrudeItem}>
+                        <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>Brent</Text>
+                        <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.brent_usd.toFixed(2)}</Text>
+                      </View>
+                      <View style={[styles.globalCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
+                      <View style={styles.globalCrudeItem}>
+                        <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>WTI</Text>
+                        <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.wti_usd?.toFixed(2)}</Text>
+                      </View>
+                      <View style={[styles.globalCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
+                      <View style={styles.globalCrudeItem}>
+                        <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>Gasoline</Text>
+                        <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.gasoline_global_usd?.toFixed(2)}</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.globalCrudeSource, { color: colors.crudeSource }]}>via {data.global_crude.source}</Text>
+                  </View>
+                </SlideInView>
               )}
-              {showDiesel && (
-                <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderTopColor: colors.accentDiesel, borderTopWidth: 3, flex: showPetrol ? 1 : undefined }]}>
-                  <View style={styles.priceHeader}>
-                    <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{t('common.diesel')}</Text>
-                    <View style={styles.trendRow}>
-                      {data.trend.diesel === 'up' ? (
-                        <Ionicons name="arrow-up" size={13} color={colors.trendUp} />
-                      ) : (
-                        <Ionicons name="arrow-down" size={13} color={colors.trendDown} />
-                      )}
-                      <Text style={[data.trend.diesel === 'up' ? { color: colors.trendUp } : { color: colors.trendDown }, { fontSize: 12, fontWeight: '600' }]}>
-                        {data.trend.diesel_change}%
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.priceBody}>
-                    <View>
-                      <Text style={[styles.priceValue, { color: colors.textPrimary }]}>
-                        Rs {data.current_price.diesel.toFixed(2)}
-                        <Text style={[styles.priceUnit, { color: colors.textMuted }]}>/{data.current_price.unit}</Text>
-                      </Text>
-                      <Text style={[styles.priceSub, { color: colors.textMuted }]}>{t('common.perLitre')}</Text>
-                    </View>
-                    <Sparkline
-                      data={makeSparklineSmooth(data.current_price.diesel, data.trend.diesel, data.trend.diesel_change)}
-                      width={70}
-                      height={36}
-                      color={colors.accentDiesel}
-                      strokeWidth={2}
-                    />
-                  </View>
-                </View>
-              )}
-            </View>
-
-            <View style={[styles.fuelUsageCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-              <Text style={[styles.fuelUsageTitle, { color: colors.textPrimary }]}>{t('home.yourFuelUsage')}</Text>
-              <View style={styles.fuelUsageGrid}>
-                <View style={styles.fuelUsageItem}>
-                  <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.dailyUsage')}</Text>
-                  <View style={styles.fuelInputRow}>
-                    <TextInput
-                      style={[styles.fuelInput, { backgroundColor: colors.bg, borderColor: colors.borderInput, color: colors.textPrimary }]}
-                      value={fuelLiters}
-                      onChangeText={setFuelLiters}
-                      keyboardType="numeric"
-                      placeholder={t('home.dailyPlaceholder')}
-                      placeholderTextColor={colors.textMuted}
-                    />
-                    <Text style={[styles.fuelInputUnit, { color: colors.textMuted }]}>{t('common.litre')}</Text>
-                  </View>
-                </View>
-                <View style={styles.fuelUsageItem}>
-                  <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.estDriven')}</Text>
-                  <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>{kmDriven || dailyEstKm} km/day</Text>
-                </View>
-                <View style={styles.fuelUsageItem}>
-                  <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.weeklyCost')}</Text>
-                  <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>Rs {weeklyFuelCost.toFixed(0)}</Text>
-                </View>
-                <View style={styles.fuelUsageItem}>
-                  <Text style={[styles.fuelUsageLabel, { color: colors.textMuted }]}>{t('home.lastRefill')}</Text>
-                  <Text style={[styles.fuelUsageValue, { color: colors.textPrimary }]}>{lastRefill ? formatDate(lastRefill) : '\u2014'}</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.metricsRow}>
-              <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.fuelRisk')}</Text>
-                <View style={[styles.metricBarTrack, { backgroundColor: colors.barTrack }]}>
-                  <View style={[styles.metricBarFill, { width: `${riskPct}%`, backgroundColor: colors[`risk${data.risk_level}` as keyof typeof colors] || colors.riskModerate }]} />
-                </View>
-                <Text style={[styles.metricValue, { color: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate }]}>
-                  {data.risk_level} &middot; {riskPct.toFixed(0)}%
-                </Text>
-                <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.basedOnTrend')}</Text>
-              </View>
-              <View style={[styles.metricCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                <Text style={[styles.metricLabel, { color: colors.textMuted }]}>{t('home.businessImpact')}</Text>
-                <View style={[styles.metricBarTrack, { backgroundColor: colors.barTrack }]}>
-                  <View style={[styles.metricBarFill, { width: `${impactPct}%`, backgroundColor: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]} />
-                </View>
-                <Text style={[styles.metricValue, { color: impactPct > 50 ? colors.riskHigh : impactPct > 25 ? colors.riskModerate : colors.riskLow }]}>
-                  {data.impact_score} &middot; {impactPct.toFixed(0)}%
-                </Text>
-                <Text style={[styles.metricSub, { color: colors.textMuted }]}>{t('home.weeklySpend', { amount: weeklyFuelCost.toFixed(0) })}</Text>
-              </View>
-            </View>
-
-            {data.global_crude?.brent_usd && (
-              <View style={[styles.globalCrudeCard, { backgroundColor: colors.crudeBg, borderColor: colors.crudeDivider }]}>
-                <View style={styles.globalCrudeHeader}>
-                  <Ionicons name="globe-outline" size={16} color={colors.crudeText} />
-                  <Text style={[styles.globalCrudeTitle, { color: colors.crudeText }]}> {t('home.globalCrude')}</Text>
-                </View>
-                <View style={styles.globalCrudeRow}>
-                  <View style={styles.globalCrudeItem}>
-                    <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>Brent</Text>
-                    <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.brent_usd.toFixed(2)}</Text>
-                  </View>
-                  <View style={[styles.globalCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
-                  <View style={styles.globalCrudeItem}>
-                    <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>WTI</Text>
-                    <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.wti_usd?.toFixed(2)}</Text>
-                  </View>
-                  <View style={[styles.globalCrudeDivider, { backgroundColor: colors.crudeDivider }]} />
-                  <View style={styles.globalCrudeItem}>
-                    <Text style={[styles.globalCrudeLabel, { color: colors.crudeLabel }]}>Gasoline</Text>
-                    <Text style={[styles.globalCrudeValue, { color: colors.crudeValue }]}>${data.global_crude.gasoline_global_usd?.toFixed(2)}</Text>
-                  </View>
-                </View>
-                <Text style={[styles.globalCrudeSource, { color: colors.crudeSource }]}>via {data.global_crude.source}</Text>
-              </View>
-            )}
+            </StaggerContainer>
           </>
         ) : null}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -414,6 +452,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
   },
   badgeText: { fontSize: 11, fontWeight: '600' },
+  errorBanner: {
+    padding: 12, borderRadius: 8,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
+  errorText: { fontSize: 13, flex: 1 },
+  retryText: { fontSize: 12, fontWeight: '600', marginLeft: 8 },
   globalCrudeCard: {
     borderRadius: 12, padding: 16, gap: 12,
     borderWidth: 1,
