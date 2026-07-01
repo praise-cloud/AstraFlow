@@ -82,7 +82,7 @@ def fetch_retail_prices() -> list[dict]:
     Prices are in MUR (Mauritian Rupees) per litre.
     """
     try:
-        resp = httpx.get(STC_RETAIL_URL, timeout=15, follow_redirects=True)
+        resp = httpx.get(STC_RETAIL_URL, timeout=10, follow_redirects=True)
         resp.raise_for_status()
     except httpx.HTTPError:
         return []
