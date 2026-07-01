@@ -14,6 +14,7 @@ from backend.services.scraper import fetch_retail_prices
 from backend.services.oil_price_api import fetch_global_prices
 from backend.ml.forecast import get_forecaster
 from typing import Optional
+from concurrent.futures import ThreadPoolExecutor
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -222,7 +223,10 @@ def _get_recommendation(db: Session, business_type: str) -> dict:
 
 @router.get("/dashboard")
 def get_dashboard(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    _ensure_prices_scraped(db)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        oil_future = pool.submit(fetch_global_prices)
+        _ensure_prices_scraped(db)
+        global_prices = oil_future.result()
 
     prices = _get_latest_prices(db)
     trend = _get_trend(db)
@@ -258,8 +262,6 @@ def get_dashboard(user: User = Depends(get_current_user), db: Session = Depends(
             f"Petrol stable at Rs {petrol_price:.2f}/L as of {prices['petrol_date']}. "
             f"Global crude supply fluctuations are being monitored."
         )
-
-    global_prices = fetch_global_prices()
 
     return {
         "current_price": {
