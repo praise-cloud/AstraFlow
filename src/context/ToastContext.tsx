@@ -1,9 +1,20 @@
-import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { SlideInUp, FadeOutUp } from 'react-native-reanimated';
+import Animated, {
+  BounceInDown,
+  BounceIn,
+  FadeOutUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColor } from '@/hooks/useAppColor';
+import { useHaptic } from '@/hooks/useHaptic';
+import { useSound } from '@/hooks/useSound';
 
 type ToastType = 'success' | 'error' | 'warning' | 'caution' | 'info';
 
@@ -44,47 +55,119 @@ const COLOR_KEY_MAP: Record<ToastType, string> = {
   info: 'accentPetrol',
 };
 
-const BG_KEY_MAP: Record<ToastType, string> = {
-  success: 'bgSuccess',
-  error: 'bgDanger',
-  warning: 'bgWarning',
-  caution: 'bgWarning',
-  info: 'bgPrimaryLight',
+const HAPTIC_MAP: Record<ToastType, keyof ReturnType<typeof useHaptic>> = {
+  success: 'hapticSuccess',
+  error: 'hapticError',
+  warning: 'hapticWarning',
+  caution: 'hapticWarning',
+  info: 'hapticLight',
 };
+
+const SOUND_MAP: Record<ToastType, keyof ReturnType<typeof useSound>> = {
+  success: 'playSuccess',
+  error: 'playError',
+  warning: 'playTap',
+  caution: 'playTap',
+  info: 'playTap',
+};
+
+function ProgressBar({ duration, color }: { duration: number; color: string }) {
+  const width = useSharedValue(100);
+
+  useEffect(() => {
+    width.value = 100;
+    width.value = withTiming(0, {
+      duration,
+      easing: Easing.linear,
+    });
+  }, [duration]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: `${width.value}%` as any,
+  }));
+
+  return (
+    <View style={styles.progressTrack}>
+      <Animated.View style={[styles.progressFill, { backgroundColor: color }, animatedStyle]} />
+    </View>
+  );
+}
 
 function ToastItem({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => void }) {
   const colors = useAppColor();
+  const haptics = useHaptic();
+  const sounds = useSound();
   const iconName = ICON_MAP[toast.type];
   const colorKey = COLOR_KEY_MAP[toast.type] as keyof typeof colors;
-  const bgKey = BG_KEY_MAP[toast.type] as keyof typeof colors;
+  const accentColor = colors[colorKey] as string;
+  const translateX = useSharedValue(0);
+
+  useEffect(() => {
+    const hapticFn = haptics[HAPTIC_MAP[toast.type]];
+    if (hapticFn) (hapticFn as () => void)();
+    const soundFn = sounds[SOUND_MAP[toast.type]];
+    if (soundFn) (soundFn as () => Promise<void>)();
+  }, []);
+
+  const swipeGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      if (e.translationX > 0) {
+        translateX.value = e.translationX;
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationX > 100) {
+        onDismiss();
+      } else {
+        translateX.value = withTiming(0, { duration: 200 });
+      }
+    });
+
+  const swipeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
 
   return (
-    <View style={[styles.toastCard, { backgroundColor: colors.bgCard, shadowColor: colors.shadow }]}>
-      <View style={[styles.toastAccent, { backgroundColor: colors[colorKey] as string }]} />
-      <Ionicons name={iconName} size={22} color={colors[colorKey] as string} style={styles.toastIcon} />
-      <View style={styles.toastContent}>
-        {toast.title && <Text style={[styles.toastTitle, { color: colors.textPrimary }]} numberOfLines={1}>{toast.title}</Text>}
-        <Text style={[styles.toastMessage, { color: colors.textSecondary }]} numberOfLines={2}>{toast.message}</Text>
-      </View>
-      <TouchableOpacity onPress={onDismiss} style={styles.toastDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Ionicons name="close" size={18} color={colors.textMuted} />
-      </TouchableOpacity>
-    </View>
+    <GestureDetector gesture={swipeGesture}>
+      <Animated.View style={[styles.toastCard, { backgroundColor: colors.bgCard, shadowColor: colors.shadow }, swipeStyle]}>
+        <View style={[styles.toastAccent, { backgroundColor: accentColor }]} />
+
+        <Animated.View entering={BounceIn.duration(400).springify()}>
+          <Ionicons name={iconName} size={22} color={accentColor} style={styles.toastIcon} />
+        </Animated.View>
+
+        <View style={styles.toastContent}>
+          {toast.title && (
+            <Text style={[styles.toastTitle, { color: colors.textPrimary }]} numberOfLines={1}>
+              {toast.title}
+            </Text>
+          )}
+          <Text style={[styles.toastMessage, { color: colors.textSecondary }]} numberOfLines={2}>
+            {toast.message}
+          </Text>
+        </View>
+
+        <TouchableOpacity onPress={onDismiss} style={styles.toastDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="close" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <ProgressBar duration={toast.duration || 3000} color={accentColor} />
+      </Animated.View>
+    </GestureDetector>
   );
 }
 
 function ToastOverlay({ toasts, dismissToast }: { toasts: ToastItem[]; dismissToast: (id: number) => void }) {
   const insets = useSafeAreaInsets();
-  const colors = useAppColor();
 
   if (toasts.length === 0) return null;
 
   return (
     <View style={[StyleSheet.absoluteFill, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
-      {toasts.map(toast => (
+      {toasts.map((toast, index) => (
         <Animated.View
           key={toast.id}
-          entering={SlideInUp.duration(300).springify()}
+          entering={BounceInDown.delay(index * 80).duration(400).springify()}
           exiting={FadeOutUp.duration(200)}
           style={styles.toastAnimatedWrapper}
         >
@@ -130,6 +213,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     paddingRight: 10,
+    paddingBottom: 0,
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -159,5 +243,19 @@ const styles = StyleSheet.create({
   toastDismiss: {
     padding: 4,
     marginLeft: 4,
+  },
+  progressTrack: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: 'transparent',
+  },
+  progressFill: {
+    height: '100%',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    opacity: 0.35,
   },
 });
