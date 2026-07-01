@@ -1,7 +1,8 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
-import { Audio, AVPlaybackSource } from 'expo-av';
+import { useRef, useCallback, useEffect } from 'react';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 
-const SOURCES: Record<string, AVPlaybackSource> = {
+const SOURCES: Record<string, string | number> = {
   tap: require('../../assets/sounds/tap.wav'),
   success: require('../../assets/sounds/success.wav'),
   error: require('../../assets/sounds/error.wav'),
@@ -10,58 +11,61 @@ const SOURCES: Record<string, AVPlaybackSource> = {
 };
 
 export function useSound() {
-  const soundRefs = useRef<Record<string, Audio.Sound | null>>({});
-  const [loaded, setLoaded] = useState(false);
+  const playersRef = useRef<Record<string, AudioPlayer | null>>({});
 
   useEffect(() => {
-    Audio.setAudioModeAsync({ playsInSilentModeIOS: true }).catch(() => {});
+    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
     return () => {
-      Object.values(soundRefs.current).forEach((s) => s?.unloadAsync().catch(() => {}));
+      Object.values(playersRef.current).forEach((p) => {
+        if (p) { try { (p as any).release?.(); } catch {} }
+      });
+      playersRef.current = {};
     };
   }, []);
 
-  const ensureLoaded = useCallback(async (name: string) => {
-    if (!soundRefs.current[name]) {
+  const ensurePlayer = useCallback(async (name: string) => {
+    if (!playersRef.current[name]) {
       const source = SOURCES[name];
-      if (!source) return;
-      const { sound } = await Audio.Sound.createAsync(source, { volume: 0.5 });
-      soundRefs.current[name] = sound;
+      if (!source) return null;
+      const player = createAudioPlayer(source);
+      player.volume = 0.5;
+      playersRef.current[name] = player;
     }
-    return soundRefs.current[name];
+    return playersRef.current[name];
   }, []);
 
   const playTap = useCallback(async () => {
-    const sound = await ensureLoaded('tap');
-    if (sound) sound.replayAsync().catch(() => {});
-  }, [ensureLoaded]);
+    const player = await ensurePlayer('tap');
+    if (player) { await player.seekTo(0); player.play(); }
+  }, [ensurePlayer]);
 
   const playSuccess = useCallback(async () => {
-    const sound = await ensureLoaded('success');
-    if (sound) sound.replayAsync().catch(() => {});
-  }, [ensureLoaded]);
+    const player = await ensurePlayer('success');
+    if (player) { await player.seekTo(0); player.play(); }
+  }, [ensurePlayer]);
 
   const playError = useCallback(async () => {
-    const sound = await ensureLoaded('error');
-    if (sound) sound.replayAsync().catch(() => {});
-  }, [ensureLoaded]);
+    const player = await ensurePlayer('error');
+    if (player) { await player.seekTo(0); player.play(); }
+  }, [ensurePlayer]);
 
   const playWhoosh = useCallback(async () => {
-    const sound = await ensureLoaded('whoosh');
-    if (sound) sound.replayAsync().catch(() => {});
-  }, [ensureLoaded]);
+    const player = await ensurePlayer('whoosh');
+    if (player) { await player.seekTo(0); player.play(); }
+  }, [ensurePlayer]);
 
   const playRefresh = useCallback(async () => {
-    const sound = await ensureLoaded('refresh');
-    if (sound) sound.replayAsync().catch(() => {});
-  }, [ensureLoaded]);
+    const player = await ensurePlayer('refresh');
+    if (player) { await player.seekTo(0); player.play(); }
+  }, [ensurePlayer]);
 
   const playByName = useCallback(
     async (name: string) => {
-      const sound = await ensureLoaded(name);
-      if (sound) sound.replayAsync().catch(() => {});
+      const player = await ensurePlayer(name);
+      if (player) { await player.seekTo(0); player.play(); }
     },
-    [ensureLoaded]
+    [ensurePlayer]
   );
 
-  return { playTap, playSuccess, playError, playWhoosh, playRefresh, playByName, loaded };
+  return { playTap, playSuccess, playError, playWhoosh, playRefresh, playByName, loaded: true };
 }
