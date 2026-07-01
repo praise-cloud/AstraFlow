@@ -101,6 +101,7 @@ export type UserResponse = {
   business_type: string;
   fuel_type: string;
   avatar_url: string | null;
+  preferred_unit: string;
 };
 
 export const api = {
@@ -121,7 +122,7 @@ export const api = {
     get: () =>
       request<UserResponse>('/auth/profile'),
 
-    update: (data: { full_name?: string; business_type?: string; fuel_type?: string }) =>
+    update: (data: { full_name?: string; business_type?: string; fuel_type?: string; preferred_unit?: string }) =>
       request<UserResponse>('/auth/profile', {
         method: 'PUT',
         body: JSON.stringify(data),
@@ -143,6 +144,12 @@ export const api = {
           } as any);
           return form;
         })(),
+      }),
+
+    changePassword: (data: { current_password: string; new_password: string }) =>
+      request<{ message: string }>('/auth/change-password', {
+        method: 'PUT',
+        body: JSON.stringify(data),
       }),
   },
 
@@ -254,9 +261,9 @@ export const api = {
       request<{ message: string }>('/notifications/register', { method: 'DELETE' }),
 
     preferences: () =>
-      request<{ push_enabled: boolean; alerts_enabled: boolean; min_change_pct: number; alert_on_petrol: boolean; alert_on_diesel: boolean }>('/notifications/preferences'),
+      request<{ push_enabled: boolean; alerts_enabled: boolean; min_change_pct: number; alert_on_petrol: boolean; alert_on_diesel: boolean; weekly_insights: boolean }>('/notifications/preferences'),
 
-    updatePreferences: (data: { min_change_pct?: number; alert_on_petrol?: boolean; alert_on_diesel?: boolean; alerts_enabled?: boolean }) =>
+    updatePreferences: (data: { min_change_pct?: number; alert_on_petrol?: boolean; alert_on_diesel?: boolean; alerts_enabled?: boolean; weekly_insights?: boolean }) =>
       request<{ message: string }>('/notifications/preferences', {
         method: 'PATCH',
         body: JSON.stringify(data),

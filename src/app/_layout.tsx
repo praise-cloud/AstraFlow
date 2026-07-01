@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { StatusBar } from 'expo-status-bar';
@@ -128,6 +129,11 @@ function RootLayoutInner() {
           <Stack.Screen name="register" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="survey" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="change-password" />
+          <Stack.Screen name="settings" />
+          <Stack.Screen name="help" />
+          <Stack.Screen name="privacy" />
+          <Stack.Screen name="units" />
         </Stack>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       </ToastProvider>
@@ -137,13 +143,16 @@ function RootLayoutInner() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <RootLayoutInner />
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.gestureRoot}>
+      <ThemeProvider>
+        <RootLayoutInner />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  gestureRoot: { flex: 1 },
   splashContainer: {
     flex: 1,
     alignItems: 'center',

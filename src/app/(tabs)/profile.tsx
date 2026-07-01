@@ -15,6 +15,12 @@ import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
 import { changeLanguage, getCurrentLanguage } from '@/i18n';
 
+const UNIT_OPTIONS = [
+  { id: 'L', labelKey: 'profile.liters', icon: 'resize-outline' },
+  { id: 'gal_us', labelKey: 'profile.galUs', icon: 'resize-outline' },
+  { id: 'gal_uk', labelKey: 'profile.galUk', icon: 'resize-outline' },
+];
+
 const FUEL_TYPES = [
   { id: 'petrol', icon: 'car-sport-outline', labelKey: 'register.petrol' },
   { id: 'diesel', icon: 'car-outline', labelKey: 'register.diesel' },
@@ -37,7 +43,7 @@ const BUSINESS_TYPES = [
   { id: 'logistics', labelKey: 'register.businessLogistics', icon: 'bus-outline' },
 ];
 
-type ModalType = 'fuel' | 'lang' | 'units' | null;
+type ModalType = 'fuel' | 'lang' | 'units' | 'password' | null;
 
 export default function ProfileScreen() {
   const [user, setUserState] = useState<UserData | null>(null);
@@ -55,6 +61,9 @@ export default function ProfileScreen() {
   const [currentLang, setCurrentLang] = useState<'en' | 'fr'>(getCurrentLanguage());
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [modalFuel, setModalFuel] = useState('');
+  const [cpCurrentPw, setCpCurrentPw] = useState('');
+  const [cpNewPw, setCpNewPw] = useState('');
+  const [cpSaving, setCpSaving] = useState(false);
   const colors = useAppColor();
   const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation();
@@ -111,6 +120,29 @@ export default function ProfileScreen() {
   const handleToggleInsights = (value: boolean) => {
     setWeeklyInsights(value);
     updatePrefs({ weekly_insights: value });
+  };
+
+  const handleChangePassword = async () => {
+    if (!cpCurrentPw || !cpNewPw) {
+      showToast({ type: 'warning', title: 'Validation', message: 'Please fill in both fields' });
+      return;
+    }
+    if (cpNewPw.length < 6) {
+      showToast({ type: 'warning', title: 'Validation', message: t('profile.passwordTooShort') });
+      return;
+    }
+    setCpSaving(true);
+    try {
+      await api.profile.changePassword({ current_password: cpCurrentPw, new_password: cpNewPw });
+      setActiveModal(null);
+      setCpCurrentPw('');
+      setCpNewPw('');
+      showToast({ type: 'success', title: 'Success', message: t('profile.passwordChanged') });
+    } catch (err: any) {
+      showToast({ type: 'error', title: 'Error', message: err.detail || t('profile.passwordError') });
+    } finally {
+      setCpSaving(false);
+    }
   };
 
   const handleLogout = () => {
@@ -185,6 +217,14 @@ export default function ProfileScreen() {
     setActiveModal('fuel');
   };
 
+  const handleUnitChange = (unit: string) => {
+    const updated = { ...user!, preferred_unit: unit };
+    setUserState(updated);
+    setUser(updated);
+    api.profile.update({ preferred_unit: unit }).catch(() => {});
+    setActiveModal(null);
+  };
+
   const confirmFuel = () => {
     if (editing) {
       setEditFuelType(modalFuel);
@@ -224,7 +264,7 @@ export default function ProfileScreen() {
           <Ionicons name="arrow-back" size={22} color={colors.accentPetrol} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Profile</Text>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => {}}>
+        <TouchableOpacity style={styles.headerBtn} onPress={() => router.push('/settings')}>
           <Ionicons name="settings-outline" size={22} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
@@ -319,15 +359,15 @@ export default function ProfileScreen() {
             <Divider colors={colors} />
             <SettingsRow
               icon="lock-closed-outline"
-              label="Change Password"
+              label={t('profile.changePassword')}
               colors={colors}
-              onPress={() => showToast({ type: 'info', title: 'Coming Soon', message: 'Password change will be available soon.' })}
+              onPress={() => { setCpCurrentPw(''); setCpNewPw(''); setActiveModal('password'); }}
             />
           </Section>
 
           <Section title="Notifications" colors={colors}>
             <SettingsRowToggle
-              icon="notifications-active"
+              icon="notifications-outline"
               label="Price Alert"
               value={pushEnabled}
               onValueChange={handleTogglePush}
@@ -383,7 +423,7 @@ export default function ProfileScreen() {
 
           <Section title="App Settings" colors={colors}>
             <SettingsRow
-              icon="gas-station-outline"
+              icon="car-sport-outline"
               label="Preferred Fuel"
               subtitle={user?.fuel_type ? t(`register.${user.fuel_type}`) : t('register.petrol')}
               colors={colors}
@@ -392,10 +432,14 @@ export default function ProfileScreen() {
             <Divider colors={colors} />
             <SettingsRow
               icon="resize-outline"
-              label="Units"
-              subtitle="Liters"
+              label={t('profile.preferredUnit')}
+              subtitle={(() => {
+                const unit = user?.preferred_unit || 'L';
+                const opt = UNIT_OPTIONS.find(u => u.id === unit);
+                return opt ? t(opt.labelKey) : 'Liters (L)';
+              })()}
               colors={colors}
-              onPress={() => {}}
+              onPress={() => setActiveModal('units')}
             />
             <Divider colors={colors} />
             <SettingsRow
@@ -420,14 +464,14 @@ export default function ProfileScreen() {
               icon="help-circle-outline"
               label="Help Center"
               colors={colors}
-              onPress={() => {}}
+              onPress={() => router.push('/help')}
             />
             <Divider colors={colors} />
             <SettingsRow
               icon="shield-outline"
               label="Privacy Policy"
               colors={colors}
-              onPress={() => {}}
+              onPress={() => router.push('/privacy')}
             />
           </Section>
         </View>
@@ -464,6 +508,77 @@ export default function ProfileScreen() {
               { id: 'en', labelKey: 'English' as any },
               { id: 'fr', labelKey: 'Français' as any },
             ], currentLang, (id) => handleLangChange(id as 'en' | 'fr'))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={activeModal === 'units'} transparent animationType="fade" onRequestClose={() => setActiveModal(null)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setActiveModal(null)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('profile.preferredUnit')}</Text>
+            <View style={{ gap: 2 }}>
+              {UNIT_OPTIONS.map((item) => {
+                const isSelected = (user?.preferred_unit || 'L') === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.modalRow, isSelected && { backgroundColor: colors.bgPrimaryLight }]}
+                    onPress={() => handleUnitChange(item.id)}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Ionicons name={item.icon as any} size={20} color={isSelected ? colors.accentPetrol : colors.textMuted} />
+                      <Text style={[styles.modalRowText, { color: colors.textPrimary }, isSelected && { color: colors.accentPetrol, fontWeight: '700' }]}>
+                        {t(item.labelKey)}
+                      </Text>
+                    </View>
+                    {isSelected && <Ionicons name="checkmark" size={20} color={colors.accentPetrol} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={activeModal === 'password'} transparent animationType="fade" onRequestClose={() => setActiveModal(null)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setActiveModal(null)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('profile.changePassword')}</Text>
+            <TextInput
+              style={[styles.editInput, { color: colors.textPrimary, borderBottomColor: colors.border, marginBottom: 12 }]}
+              value={cpCurrentPw}
+              onChangeText={setCpCurrentPw}
+              placeholder={t('profile.currentPassword')}
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+            />
+            <TextInput
+              style={[styles.editInput, { color: colors.textPrimary, borderBottomColor: colors.border, marginBottom: 16 }]}
+              value={cpNewPw}
+              onChangeText={setCpNewPw}
+              placeholder={t('profile.newPassword')}
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+            />
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                style={[styles.editActionBtn, { borderColor: colors.border }]}
+                onPress={() => setActiveModal(null)}
+              >
+                <Text style={[styles.editActionCancel, { color: colors.textMuted }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.editActionBtn, { backgroundColor: colors.accentPetrol }]}
+                onPress={handleChangePassword}
+                disabled={cpSaving}
+              >
+                {cpSaving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={[styles.editActionSave, { color: '#fff' }]}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>

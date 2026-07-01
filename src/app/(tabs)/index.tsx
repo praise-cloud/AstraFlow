@@ -55,6 +55,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [weeklyInsights, setWeeklyInsights] = useState(false);
   const [fuelLiters, setFuelLiters] = useState('45');
 
   const user = getUser();
@@ -99,6 +100,9 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchDashboard();
+      api.notifications.preferences()
+        .then(prefs => setWeeklyInsights(prefs.weekly_insights))
+        .catch(() => {});
     }, [fetchDashboard])
   );
 
@@ -183,7 +187,7 @@ export default function HomeScreen() {
               <SlideInView direction="up" duration={400}>
                 <View style={[styles.recFullCard, { backgroundColor: colors.bgPrimary }]}>
                   <View style={styles.recFullGlow}>
-                    <Ionicons name="notifications-active" size={100} color={colors.accentPetrol} style={{ opacity: 0.2 }} />
+                    <Ionicons name="notifications" size={100} color={colors.accentPetrol} style={{ opacity: 0.2 }} />
                   </View>
                   <Text style={[styles.recFullLabel, { color: colors.textWhite }]}>{t('home.recommendation')}</Text>
                   <Text style={[styles.recFullTitle, { color: colors.textWhite }]}>{data.recommendation.title}</Text>
@@ -322,6 +326,47 @@ export default function HomeScreen() {
                   </View>
                 </View>
               </SlideInView>
+
+              {/* Row 6: Weekly Insights card (conditional) */}
+              {weeklyInsights && (
+                <SlideInView direction="up" duration={400} delay={400}>
+                  <View style={[styles.insightsCard, { backgroundColor: colors.bgPrimary, borderColor: colors.borderLight }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <Ionicons name="analytics" size={18} color={colors.textWhite} />
+                      <Text style={[styles.bentoCardLabel, { color: colors.textWhite, opacity: 0.8 }]}>{t('home.weeklyInsightsTitle')}</Text>
+                    </View>
+                    <View style={{ gap: 6 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={[{ color: colors.textWhite, opacity: 0.7, fontSize: 12 }]}>Petrol</Text>
+                        <Text style={[{ color: colors.textWhite, fontWeight: '700', fontSize: 13 }]}>
+                          Rs {data.current_price.petrol.toFixed(2)}/{data.current_price.unit}
+                          <Text style={{ fontSize: 10, opacity: 0.6 }}>
+                            {' '}{data.trend.petrol === 'up' ? '↑' : '↓'} {data.trend.petrol_change}%
+                          </Text>
+                        </Text>
+                      </View>
+                      {showDiesel && (
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={[{ color: colors.textWhite, opacity: 0.7, fontSize: 12 }]}>Diesel</Text>
+                          <Text style={[{ color: colors.textWhite, fontWeight: '700', fontSize: 13 }]}>
+                            Rs {data.current_price.diesel.toFixed(2)}/{data.current_price.unit}
+                            <Text style={{ fontSize: 10, opacity: 0.6 }}>
+                              {' '}{data.trend.diesel === 'up' ? '↑' : '↓'} {data.trend.diesel_change}%
+                            </Text>
+                          </Text>
+                        </View>
+                      )}
+                      <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.15)', marginTop: 4, paddingTop: 8 }}>
+                        <Text style={[{ color: colors.textWhite, opacity: 0.7, fontSize: 12 }]}>{t('home.weeklyInsightSpend', { amount: weeklyFuelCost.toFixed(0) })}</Text>
+                        <Text style={[{ color: colors.textWhite, opacity: 0.6, fontSize: 11, marginTop: 2 }]}>
+                          {t('home.weeklyInsightSavings')}: Rs {(weeklyFuelCost * savingsDecimal * 4).toFixed(0)}/mo
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={[styles.insightsDot, { backgroundColor: colors.accentPetrol }]} />
+                  </View>
+                </SlideInView>
+              )}
             </StaggerContainer>
           </>
         ) : null}
@@ -409,6 +454,14 @@ const styles = StyleSheet.create({
   },
   fuelRowUnit: { fontSize: 12, fontWeight: '500' },
   fuelRowAmount: { fontSize: 16, fontWeight: '700' },
+  insightsCard: {
+    borderRadius: 14, borderWidth: 1, padding: 18,
+    position: 'relative', overflow: 'hidden',
+  },
+  insightsDot: {
+    position: 'absolute', top: -20, right: -20,
+    width: 80, height: 80, borderRadius: 40, opacity: 0.15,
+  },
   errorContainer: {
     flex: 1, borderRadius: 14, borderWidth: 1,
     padding: 32, gap: 12,
