@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, RefreshControl, TextInput, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -100,8 +100,10 @@ export default function HomeScreen() {
   const [lastRefill, setLastRefill] = useState<Date | null>(null);
   const [kmDriven, setKmDriven] = useState('0');
 
+  const dataLoaded = useRef(false);
+
   const user = getUser();
-  const userFuelType = data?.fuel_type || user?.fuel_type || 'petrol';
+  const userFuelType = user?.fuel_type || data?.fuel_type || 'petrol';
   const showPetrol = userFuelType === 'petrol' || userFuelType === 'both';
   const showDiesel = userFuelType === 'diesel' || userFuelType === 'both';
 
@@ -116,17 +118,18 @@ export default function HomeScreen() {
     try {
       const res = await api.dashboard.get();
       setData(res);
+      dataLoaded.current = true;
     } catch (err: any) {
       if (err.status === 401) {
         router.replace('/login');
         return;
       }
       setError(err.detail || t('home.errorDashboard'));
-      if (!data) setData(MOCK_DATA);
+      if (!dataLoaded.current) setData(MOCK_DATA);
     } finally {
       setLoading(false);
     }
-  }, [data]);
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -141,7 +144,11 @@ export default function HomeScreen() {
     }
   }, []);
 
-  useEffect(() => { fetchDashboard(); }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboard();
+    }, [fetchDashboard])
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
