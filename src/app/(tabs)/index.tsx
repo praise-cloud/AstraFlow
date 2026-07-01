@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { StyleSheet, View, Text, ScrollView, RefreshControl, TextInput, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { api, avatarUrl } from '@/services/api';
 import { getUser } from '@/services/auth';
 import { useAppColor } from '@/hooks/useAppColor';
-import { getCurrentLanguage } from '@/i18n';
 import { AnimatedPressable } from '@/components/animations/AnimatedPressable';
 import { StaggerContainer } from '@/components/animations/StaggerContainer';
 import { SlideInView } from '@/components/animations/SlideInView';
@@ -16,17 +15,8 @@ import { Shimmer } from '@/components/animations/Shimmer';
 
 type DashboardData = {
   current_price: { petrol: number; diesel: number; currency: string; unit: string };
-  global_crude?: {
-    brent_usd: number | null;
-    wti_usd: number | null;
-    diesel_global_usd: number | null;
-    gasoline_global_usd: number | null;
-    updated_at: string | null;
-    source: string;
-  };
   trend: { petrol: string; petrol_change: number; diesel: string; diesel_change: number };
   risk_level: string;
-  impact_score: string;
   recommendation: { title: string; content: string };
   market_update: string;
   business_type: string;
@@ -35,31 +25,27 @@ type DashboardData = {
   user_name: string;
 };
 
-const MOCK_DATA: DashboardData = {
-  current_price: { petrol: 64.25, diesel: 71.25, currency: 'MUR', unit: 'L' },
-  global_crude: {
-    brent_usd: 72.39, wti_usd: 68.15,
-    diesel_global_usd: 3.13, gasoline_global_usd: 2.98,
-    updated_at: new Date().toISOString(), source: 'OilPriceAPI',
-  },
-  trend: { petrol: 'down', petrol_change: 0.2, diesel: 'up', diesel_change: 0.5 },
-  risk_level: 'Moderate',
-  impact_score: 'Medium',
-  recommendation: {
-    title: 'Fuel Up Now',
-    content: 'Prices are projected to rise by 4.2% in the next 24 hours.',
-  },
-  market_update: 'Global crude supply fluctuations are driving local price hikes.',
-  business_type: 'restaurant',
-  fuel_type: 'petrol',
-  avatar_url: null,
-  user_name: 'User',
-};
+function getNextCycleDay(): string {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const today = new Date().getDay();
+  const daysUntil = (2 - today + 7) % 7;
+  if (daysUntil === 0) return 'Today (Tuesday)';
+  const next = new Date();
+  next.setDate(next.getDate() + daysUntil);
+  return days[next.getDay()];
+}
 
-function formatDate(d: string | Date): string {
-  const date = typeof d === 'string' ? new Date(d) : d;
-  const lang = getCurrentLanguage();
-  return date.toLocaleDateString(lang === 'fr' ? 'fr-MU' : 'en-MU', { month: 'short', day: 'numeric', year: 'numeric' });
+function getEfficiencyTip(dayIndex: number): { text: string; savings: string } {
+  const tips = [
+    { text: 'Smooth braking can save up to 15% on fuel annually.', savings: '15%' },
+    { text: 'Proper tire inflation improves fuel efficiency by 3%.', savings: '3%' },
+    { text: 'Reducing idle time saves up to 2% fuel per minute.', savings: '2%' },
+    { text: 'Regular engine maintenance boosts MPG by up to 4%.', savings: '4%' },
+    { text: 'Using cruise control on highways saves up to 7% fuel.', savings: '7%' },
+    { text: 'Avoid carrying roof cargo to reduce drag and save fuel.', savings: '8%' },
+    { text: 'Combine errands into one trip to minimize cold starts.', savings: '5%' },
+  ];
+  return tips[dayIndex % tips.length];
 }
 
 export default function HomeScreen() {
@@ -70,33 +56,28 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fuelLiters, setFuelLiters] = useState('45');
-  const [lastRefill, setLastRefill] = useState<Date | null>(null);
-  const [kmDriven, setKmDriven] = useState('0');
-
-  const dataLoaded = useRef(false);
 
   const user = getUser();
   const userFuelType = user?.fuel_type || data?.fuel_type || 'petrol';
   const showPetrol = userFuelType === 'petrol' || userFuelType === 'both';
   const showDiesel = userFuelType === 'diesel' || userFuelType === 'both';
 
-  const dailyEstKm = data?.business_type === 'taxi' ? 120 : data?.business_type === 'delivery' ? 80 : data?.business_type === 'logistics' ? 150 : 30;
   const relevantPrice = showPetrol ? data?.current_price.petrol : data?.current_price.diesel;
   const weeklyFuelCost = data && relevantPrice ? parseFloat(fuelLiters || '0') * relevantPrice * 7 : 0;
+  const tip = getEfficiencyTip(new Date().getDate());
+  const savingsDecimal = parseInt(tip.savings) / 100;
 
   const fetchDashboard = useCallback(async () => {
     setError(null);
     try {
       const res = await api.dashboard.get();
       setData(res);
-      dataLoaded.current = true;
     } catch (err: any) {
       if (err.status === 401) {
         router.replace('/login');
         return;
       }
       setError(err.detail || t('home.errorDashboard'));
-      if (!dataLoaded.current) setData(MOCK_DATA);
     } finally {
       setLoading(false);
     }
@@ -166,6 +147,21 @@ export default function HomeScreen() {
                 <Shimmer width="70%" height={22} borderRadius={4} baseColor={colors.bgSkeleton} shimmerColor="rgba(255,255,255,0.1)" delay={150} />
               </View>
             </SlideInView>
+          </View>
+        ) : error && !data ? (
+          <View style={[styles.errorContainer, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+            <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} style={{ opacity: 0.5 }} />
+            <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>Unable to load dashboard</Text>
+            <Text style={[styles.errorDesc, { color: colors.textSecondary }]}>{error}</Text>
+            <AnimatedPressable
+              style={[styles.errorRetryBtn, { backgroundColor: colors.accentPetrol }]}
+              onPress={fetchDashboard}
+              scaleTo={0.95}
+              haptic="light"
+            >
+              <Ionicons name="refresh" size={18} color={colors.textWhite} />
+              <Text style={[styles.errorRetryText, { color: colors.textWhite }]}>{t('common.retry')}</Text>
+            </AnimatedPressable>
           </View>
         ) : data ? (
           <>
@@ -257,7 +253,8 @@ export default function HomeScreen() {
                         {data.risk_level === 'High' ? 'Volatile' : data.risk_level === 'Moderate' ? 'Stable' : 'Low'}
                       </Text>
                       <View style={styles.miniChart}>
-                        {[40, 60, 50, 80, 70, 90].map((h, i) => (
+                        {[data.risk_level === 'High' ? 70 : data.risk_level === 'Moderate' ? 50 : 30,
+                          40, 60, 80, 70, 90].map((h, i) => (
                           <View key={i} style={[styles.miniChartBar, { backgroundColor: (colors as any)[`risk${data.risk_level}`] || colors.riskModerate, height: `${h}%` as any }]} />
                         ))}
                       </View>
@@ -265,7 +262,7 @@ export default function HomeScreen() {
                     </View>
                   </View>
 
-                  {/* Next Cycle + Crude stacked vertically */}
+                  {/* Next Cycle stacked */}
                   <View style={{ flex: 1, gap: 12 }}>
                     <View style={[styles.bentoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -273,26 +270,10 @@ export default function HomeScreen() {
                         <Text style={[styles.bentoCardLabel, { color: colors.textMuted }]}>Next Cycle</Text>
                       </View>
                       <View style={{ marginTop: 2 }}>
-                        <Text style={[styles.bentoCycleDay, { color: colors.accentPetrol }]}>Tuesday</Text>
+                        <Text style={[styles.bentoCycleDay, { color: colors.accentPetrol }]}>{getNextCycleDay()}</Text>
                         <Text style={[styles.bentoCardSubtext, { color: colors.textSecondary }]}>Best projected day for refilling next week.</Text>
                       </View>
                     </View>
-
-                    {data.global_crude?.brent_usd && (
-                      <View style={[styles.bentoCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Ionicons name="globe" size={16} color={colors.accentPetrol} />
-                          <Text style={[styles.bentoCardLabel, { color: colors.textMuted }]}>Crude Oil</Text>
-                        </View>
-                        <View style={{ marginTop: 2 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                            <Text style={[styles.bentoCrudePrice, { color: colors.textPrimary }]}>${data.global_crude.brent_usd.toFixed(2)}</Text>
-                            <Text style={[styles.bentoCrudeChange, { color: colors.riskHigh }]}>+1.2%</Text>
-                          </View>
-                          <Text style={[styles.bentoCardSubtext, { color: colors.textSecondary }]}>Brent Crude (USD/bbl)</Text>
-                        </View>
-                      </View>
-                    )}
                   </View>
                 </View>
               </SlideInView>
@@ -333,11 +314,11 @@ export default function HomeScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.bentoCardLabel, { color: colors.accentPetrol, textTransform: 'uppercase', fontSize: 10 }]}>Efficiency Tip</Text>
-                    <Text style={[styles.bentoCardSubtext, { color: colors.textSecondary, fontStyle: 'italic' }]}>Smooth braking can save up to 15% on fuel annually.</Text>
+                    <Text style={[styles.bentoCardSubtext, { color: colors.textSecondary, fontStyle: 'italic' }]}>{tip.text}</Text>
                   </View>
                   <View style={{ borderLeftWidth: 1, borderLeftColor: colors.border, paddingLeft: 12 }}>
                     <Text style={[styles.bentoCardLabel, { color: colors.accentPetrol, fontSize: 10 }]}>Est. Monthly</Text>
-                    <Text style={[styles.fuelRowAmount, { color: colors.accentPetrol }]}>Rs {(weeklyFuelCost * 0.15 * 4).toFixed(0)}</Text>
+                    <Text style={[styles.fuelRowAmount, { color: colors.accentPetrol }]}>Rs {(weeklyFuelCost * savingsDecimal * 4).toFixed(0)}</Text>
                   </View>
                 </View>
               </SlideInView>
@@ -365,14 +346,8 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 32, gap: 28 },
   bannerCard: {
-    borderRadius: 12, flexDirection: 'row',
-    overflow: 'hidden', borderWidth: 1,
+    borderRadius: 12, overflow: 'hidden', borderWidth: 1,
   },
-  bannerAccent: { width: 5 },
-  bannerContent: { flex: 1, padding: 18, gap: 6 },
-  bannerLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  bannerTitle: { fontSize: 15, fontWeight: '700' },
-  bannerText: { fontSize: 13, lineHeight: 18 },
   priceCard: {
     borderRadius: 12,
     borderWidth: 1, padding: 20, gap: 8,
@@ -420,8 +395,6 @@ const styles = StyleSheet.create({
   miniChartBar: { flex: 1, borderRadius: 2 },
   bentoCardSubtext: { fontSize: 10, lineHeight: 14, marginTop: 6 },
   bentoCycleDay: { fontSize: 18, fontWeight: '700' },
-  bentoCrudePrice: { fontSize: 18, fontWeight: '700' },
-  bentoCrudeChange: { fontSize: 10, fontWeight: '700' },
   fuelRowCard: {
     borderRadius: 12, borderWidth: 1, padding: 14,
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -436,4 +409,18 @@ const styles = StyleSheet.create({
   },
   fuelRowUnit: { fontSize: 12, fontWeight: '500' },
   fuelRowAmount: { fontSize: 16, fontWeight: '700' },
+  errorContainer: {
+    flex: 1, borderRadius: 14, borderWidth: 1,
+    padding: 32, gap: 12,
+    alignItems: 'center', justifyContent: 'center',
+    marginHorizontal: 10, marginTop: 40,
+  },
+  errorTitle: { fontSize: 18, fontWeight: '700', marginTop: 4 },
+  errorDesc: { fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  errorRetryBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingVertical: 10, paddingHorizontal: 24, borderRadius: 10,
+    marginTop: 8,
+  },
+  errorRetryText: { fontSize: 14, fontWeight: '600' },
 });
