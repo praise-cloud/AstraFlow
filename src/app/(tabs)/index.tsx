@@ -182,7 +182,7 @@ export default function HomeScreen() {
               </AnimatedPressable>
             )}
 
-            <StaggerContainer staggerDelay={80} direction="up" duration={350}>
+            <StaggerContainer staggerDelay={80} direction="up" duration={350} style={{ gap: 24 }}>
               {/* Row 1: Recommendation (full width, primary blue) */}
               <SlideInView direction="up" duration={400}>
                 <View style={[styles.recFullCard, { backgroundColor: colors.bgPrimary }]}>
