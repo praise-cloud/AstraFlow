@@ -44,6 +44,9 @@ export default function ProfileScreen() {
   const [editFuelType, setEditFuelType] = useState('');
   const [pushEnabled, setPushEnabled] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [minChangePct, setMinChangePct] = useState(2.0);
+  const [alertOnPetrol, setAlertOnPetrol] = useState(true);
+  const [alertOnDiesel, setAlertOnDiesel] = useState(true);
   const [currentLang, setCurrentLang] = useState<'en' | 'fr'>(getCurrentLanguage());
   const colors = useAppColor();
   const { theme, toggleTheme } = useTheme();
@@ -51,8 +54,21 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     getUserAsync().then(setUserState);
-    api.notifications.preferences().then(prefs => setPushEnabled(prefs.push_enabled)).catch(() => {});
+    api.notifications.preferences()
+      .then(prefs => {
+        setPushEnabled(prefs.push_enabled);
+        setMinChangePct(prefs.min_change_pct ?? 2.0);
+        setAlertOnPetrol(prefs.alert_on_petrol ?? true);
+        setAlertOnDiesel(prefs.alert_on_diesel ?? true);
+      })
+      .catch(() => {});
   }, []);
+
+  const updatePrefs = (patch: Record<string, unknown>) => {
+    api.notifications.updatePreferences(patch).catch(() => {});
+  };
+
+  const THRESHOLD_OPTIONS = [1, 2, 5, 10];
 
   const handleLangChange = (lang: 'en' | 'fr') => {
     setCurrentLang(lang);
@@ -292,6 +308,58 @@ export default function ProfileScreen() {
               </Text>
             </View>
 
+            {pushEnabled && (
+              <View style={[styles.notifCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                <View style={styles.notifHeader}>
+                  <View style={styles.notifHeaderLeft}>
+                    <Ionicons name="trending-down-outline" size={20} color={colors.textSecondary} />
+                    <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>{t('profile.minChange')}</Text>
+                  </View>
+                </View>
+                <View style={styles.thresholdRow}>
+                  {THRESHOLD_OPTIONS.map((pct) => (
+                    <TouchableOpacity
+                      key={pct}
+                      style={[styles.thresholdBtn, {
+                        borderColor: minChangePct === pct ? colors.accentPetrol : colors.borderInput,
+                        backgroundColor: minChangePct === pct ? colors.bgPrimaryLight : colors.bgSurface,
+                      }]}
+                      onPress={() => { setMinChangePct(pct); updatePrefs({ min_change_pct: pct }); }}
+                    >
+                      <Text style={[styles.thresholdBtnText, {
+                        color: minChangePct === pct ? colors.accentPetrol : colors.textSecondary,
+                        fontWeight: minChangePct === pct ? '700' : '500',
+                      }]}>{pct}%</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={styles.fuelToggleRow}>
+                  <TouchableOpacity
+                    style={[styles.fuelToggleChip, {
+                      borderColor: alertOnPetrol ? colors.accentPetrol : colors.borderInput,
+                      backgroundColor: alertOnPetrol ? colors.bgPrimaryLight : colors.bgSurface,
+                    }]}
+                    onPress={() => { setAlertOnPetrol(!alertOnPetrol); updatePrefs({ alert_on_petrol: !alertOnPetrol }); }}
+                  >
+                    <MaterialCommunityIcons name="gas-station-outline" size={16} color={alertOnPetrol ? colors.accentPetrol : colors.textMuted} />
+                    <Text style={[styles.fuelToggleLabel, { color: alertOnPetrol ? colors.accentPetrol : colors.textMuted }]}>{t('register.petrol')}</Text>
+                    {alertOnPetrol && <Ionicons name="checkmark-circle" size={16} color={colors.accentPetrol} />}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.fuelToggleChip, {
+                      borderColor: alertOnDiesel ? colors.accentPetrol : colors.borderInput,
+                      backgroundColor: alertOnDiesel ? colors.bgPrimaryLight : colors.bgSurface,
+                    }]}
+                    onPress={() => { setAlertOnDiesel(!alertOnDiesel); updatePrefs({ alert_on_diesel: !alertOnDiesel }); }}
+                  >
+                    <MaterialCommunityIcons name="engine-outline" size={16} color={alertOnDiesel ? colors.accentPetrol : colors.textMuted} />
+                    <Text style={[styles.fuelToggleLabel, { color: alertOnDiesel ? colors.accentPetrol : colors.textMuted }]}>{t('register.diesel')}</Text>
+                    {alertOnDiesel && <Ionicons name="checkmark-circle" size={16} color={colors.accentPetrol} />}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <View style={[styles.notifCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               <View style={styles.notifHeader}>
                 <View style={styles.notifHeaderLeft}>
@@ -408,6 +476,12 @@ const styles = StyleSheet.create({
   notifHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   notifTitle: { fontSize: 15, fontWeight: '600' },
   notifText: { fontSize: 13, lineHeight: 18 },
+  thresholdRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  thresholdBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
+  thresholdBtnText: { fontSize: 14 },
+  fuelToggleRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  fuelToggleChip: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
+  fuelToggleLabel: { fontSize: 13, fontWeight: '500' },
   langRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
   langBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
   langBtnText: { fontSize: 14, fontWeight: '600' },

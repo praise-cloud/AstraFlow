@@ -129,6 +129,7 @@
     "notifications": "Notifications",
     "notifEnabled": "Price alerts are enabled — you will be notified of significant changes",
     "notifDisabled": "Enable price alerts to stay informed about fuel price changes",
+    "minChange": "Minimum price change (%)",
     "darkMode": "Dark Mode",
     "darkActive": "Dark theme is active — easier on the eyes in low light",
     "darkInactive": "Switch to dark theme for a reduced glare experience",

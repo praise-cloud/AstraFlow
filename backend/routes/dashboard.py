@@ -6,20 +6,95 @@ from sqlalchemy.orm import Session
 from backend.db.database import get_db
 from backend.models.user import User
 from backend.models.fuel_price import FuelPrice
+from backend.models.push_token import PushToken
+from backend.models.price_alert import PriceAlert
 from backend.models.recommendation import Recommendation
 from backend.services.auth import decode_access_token
 from backend.services.scraper import fetch_retail_prices
 from backend.services.oil_price_api import fetch_global_prices
 from backend.ml.forecast import get_forecaster
+from typing import Optional
+import httpx
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["dashboard"])
+
+EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+
+
+def _get_oldest_new_price(db: Session, fuel_type: str) -> Optional[float]:
+    r = db.query(FuelPrice).filter(FuelPrice.fuel_type == fuel_type).order_by(FuelPrice.date.desc()).first()
+    return float(r.price) if r else None
+
+
+def _send_price_alerts(db: Session, old_petrol: Optional[float], old_diesel: Optional[float]):
+    """Check for price changes and send push alerts to users whose thresholds are met."""
+    new_petrol = _get_oldest_new_price(db, "petrol")
+    new_diesel = _get_oldest_new_price(db, "diesel")
+
+    changes = []
+    if old_petrol is not None and new_petrol is not None and old_petrol != new_petrol:
+        pct = round(((new_petrol - old_petrol) / old_petrol) * 100, 2)
+        direction = "up" if pct > 0 else "down"
+        changes.append(("petrol", old_petrol, new_petrol, pct, direction))
+    if old_diesel is not None and new_diesel is not None and old_diesel != new_diesel:
+        pct = round(((new_diesel - old_diesel) / old_diesel) * 100, 2)
+        direction = "up" if pct > 0 else "down"
+        changes.append(("diesel", old_diesel, new_diesel, pct, direction))
+
+    if not changes:
+        return
+
+    tokens = db.query(PushToken).filter(PushToken.alerts_enabled == True).all()
+    if not tokens:
+        return
+
+    for fuel_type, old_price, new_price, change_pct, direction in changes:
+        alert_col = "alert_on_petrol" if fuel_type == "petrol" else "alert_on_diesel"
+        eligible = [t for t in tokens if getattr(t, alert_col) and abs(change_pct) >= (t.min_change_pct or 2.0)]
+        if not eligible:
+            continue
+
+        already_sent_user_ids = {
+            r.user_id for r in db.query(PriceAlert).filter(
+                PriceAlert.fuel_type == fuel_type,
+                PriceAlert.new_price == new_price,
+            ).all()
+        }
+
+        unsent = [t for t in eligible if t.user_id not in already_sent_user_ids]
+        if not unsent:
+            continue
+
+        title = f"🚗 Fuel Price Alert"
+        body = (
+            f"{fuel_type.capitalize()} {direction} {abs(change_pct):.1f}% "
+            f"(Rs {old_price:.2f} → Rs {new_price:.2f}/L)"
+        )
+
+        messages = [
+            {"to": t.token, "title": title, "body": body, "sound": "default", "data": {"fuel_type": fuel_type}}
+            for t in unsent
+        ]
+        if messages:
+            try:
+                httpx.post(EXPO_PUSH_URL, json=messages, timeout=10)
+            except Exception:
+                pass
+
+        for t in unsent:
+            db.add(PriceAlert(user_id=t.user_id, fuel_type=fuel_type, old_price=old_price, new_price=new_price, change_pct=change_pct))
+    db.commit()
 
 
 def _ensure_prices_scraped(db: Session):
     last = db.query(FuelPrice).order_by(FuelPrice.date.desc()).first()
     if last and last.date >= date_lib.today() - timedelta(days=7):
         return
+
+    old_petrol = _get_oldest_new_price(db, "petrol")
+    old_diesel = _get_oldest_new_price(db, "diesel")
+
     logger.info("Dashboard: prices stale, scraping STC…")
     fresh = fetch_retail_prices()
     if not fresh:
@@ -42,6 +117,9 @@ def _ensure_prices_scraped(db: Session):
             stored += 1
     db.commit()
     logger.info(f"Dashboard: stored {stored} new price records")
+
+    if stored > 0:
+        _send_price_alerts(db, old_petrol, old_diesel)
 
 
 def get_current_user(authorization: str = Header(...), db: Session = Depends(get_db)):

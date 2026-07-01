@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from backend.db.database import get_db
 from backend.models.push_token import PushToken
+from backend.models.price_alert import PriceAlert
 from backend.models.user import User
 from backend.routes.dashboard import get_current_user
 
@@ -25,6 +26,13 @@ class AlertBody(BaseModel):
     title: str
     body: str
     data: Optional[dict] = None
+
+
+class PreferencesBody(BaseModel):
+    min_change_pct: Optional[float] = None
+    alert_on_petrol: Optional[bool] = None
+    alert_on_diesel: Optional[bool] = None
+    alerts_enabled: Optional[bool] = None
 
 
 @router.post("/register")
@@ -102,12 +110,15 @@ def get_preferences(
     return {
         "push_enabled": token is not None,
         "alerts_enabled": token.alerts_enabled if token else False,
+        "min_change_pct": token.min_change_pct if token else 2.0,
+        "alert_on_petrol": token.alert_on_petrol if token else True,
+        "alert_on_diesel": token.alert_on_diesel if token else True,
     }
 
 
 @router.patch("/preferences")
 def update_preferences(
-    body: RegisterTokenBody,
+    body: PreferencesBody,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -116,8 +127,15 @@ def update_preferences(
         .filter(PushToken.user_id == user.id)
         .first()
     )
-    if token:
-        if body.token:
-            token.token = body.token
-        db.commit()
+    if not token:
+        raise HTTPException(status_code=404, detail="No push token registered")
+    if body.min_change_pct is not None:
+        token.min_change_pct = body.min_change_pct
+    if body.alert_on_petrol is not None:
+        token.alert_on_petrol = body.alert_on_petrol
+    if body.alert_on_diesel is not None:
+        token.alert_on_diesel = body.alert_on_diesel
+    if body.alerts_enabled is not None:
+        token.alerts_enabled = body.alerts_enabled
+    db.commit()
     return {"message": "Preferences updated"}

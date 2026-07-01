@@ -226,7 +226,13 @@ export const api = {
       request<{ message: string }>('/notifications/register', { method: 'DELETE' }),
 
     preferences: () =>
-      request<{ push_enabled: boolean; alerts_enabled: boolean }>('/notifications/preferences'),
+      request<{ push_enabled: boolean; alerts_enabled: boolean; min_change_pct: number; alert_on_petrol: boolean; alert_on_diesel: boolean }>('/notifications/preferences'),
+
+    updatePreferences: (data: { min_change_pct?: number; alert_on_petrol?: boolean; alert_on_diesel?: boolean; alerts_enabled?: boolean }) =>
+      request<{ message: string }>('/notifications/preferences', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
   },
 
   routes: {

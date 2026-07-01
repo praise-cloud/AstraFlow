@@ -129,6 +129,7 @@
     "notifications": "Notifications",
     "notifEnabled": "Les alertes de prix sont activées — vous serez informé des changements importants",
     "notifDisabled": "Activez les alertes de prix pour rester informé des fluctuations",
+    "minChange": "Seuil de variation (%)",
     "darkMode": "Mode Sombre",
     "darkActive": "Le thème sombre est actif — plus agréable pour les yeux en faible luminosité",
     "darkInactive": "Activez le thème sombre pour réduire l'éblouissement",

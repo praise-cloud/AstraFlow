@@ -34,19 +34,30 @@ def init_db():
 
 def _ensure_columns_exist():
     inspector = inspect(engine)
-    columns = [c["name"] for c in inspector.get_columns("users")]
-    additions = []
-    if "fuel_type" not in columns:
-        additions.append("ADD COLUMN fuel_type VARCHAR(20) NOT NULL DEFAULT 'petrol'")
-    if "avatar_url" not in columns:
-        additions.append("ADD COLUMN avatar_url VARCHAR(512)")
-    for stmt in additions:
-        try:
-            with engine.connect() as conn:
-                conn.execute(text(f"ALTER TABLE users {stmt}"))
-                conn.commit()
-        except Exception:
-            pass
+    for table in ("users", "push_tokens"):
+        if table not in inspector.get_table_names():
+            continue
+        columns = [c["name"] for c in inspector.get_columns(table)]
+        additions = []
+        if table == "users":
+            if "fuel_type" not in columns:
+                additions.append("ADD COLUMN fuel_type VARCHAR(20) NOT NULL DEFAULT 'petrol'")
+            if "avatar_url" not in columns:
+                additions.append("ADD COLUMN avatar_url VARCHAR(512)")
+        elif table == "push_tokens":
+            if "min_change_pct" not in columns:
+                additions.append("ADD COLUMN min_change_pct FLOAT NOT NULL DEFAULT 2.0")
+            if "alert_on_petrol" not in columns:
+                additions.append("ADD COLUMN alert_on_petrol BOOLEAN NOT NULL DEFAULT 1")
+            if "alert_on_diesel" not in columns:
+                additions.append("ADD COLUMN alert_on_diesel BOOLEAN NOT NULL DEFAULT 1")
+        for stmt in additions:
+            try:
+                with engine.connect() as conn:
+                    conn.execute(text(f"ALTER TABLE {table} {stmt}"))
+                    conn.commit()
+            except Exception:
+                pass
 
 
 def get_db():
